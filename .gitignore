@@ -1,0 +1,40 @@
+# Gitignore file
+#
+# Nov 8 2015 martin.pos@2lazy.nl  - copied
+#
+# see: http://emacs.stackexchange.com/questions/293/what-should-shouldnt-i-do-when-keeping-emacs-and-emacs-d-in-version-control
+#
+
+# Remove backup files
+*#
+*.
+*.elc
+*~
+.#*
+
+# Emacs packages
+elpa/
+var/
+
+#  Emacs tmp files & Misc
+/.mc-lists.el
+/.DS_Store
+/.emacs.desktop
+/.emacs.desktop.lock
+/.watsonresults
+/ac-comphist.dat
+/auto-save-list
+/eshell/history
+/eshell/lastdir
+/newsticker/feeds/
+/snippets/
+/tramp
+/url/cookies
+/.python-environments/
+/ido.last
+/places
+/private.el
+/games/
+/bookmarks
+/projectile-bookmarks.eld
+/projectile.cache
