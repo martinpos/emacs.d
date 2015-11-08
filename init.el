@@ -15,7 +15,7 @@
 (setq inhibit-splash-screen t)
 (transient-mark-mode 0)
 (setq column-number-mode t)
-(display-time-mode 1)i
+(display-time-mode 1)
 (put 'downcase-region 'disabled nil)
 (put 'upcase-region 'disabled nil)
 ;; Write backup files to own directory
@@ -118,4 +118,21 @@
 ;;      helm-ff-search-library-in-sexp        t ; search for library in `require' and `declare-function' sexp.
 ;;      helm-scroll-amount                    8 ; scroll 8 lines other window using M-<next>/M-<prior>
 ;;      helm-ff-file-name-history-use-recentf t)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
