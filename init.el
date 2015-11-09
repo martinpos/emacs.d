@@ -8,20 +8,27 @@
                          ("marmalade" . "https://marmalade-repo.org/packages/")
                          ("melpa" . "http://melpa.org/packages/")))
 (package-initialize)
+(require 's)
 
 ;; generic
 (global-hl-line-mode 1)
+(electric-pair-mode 1)
 (set-face-background 'hl-line "#e0e0e0")
 (setq inhibit-splash-screen t)
 (transient-mark-mode 0)
 (setq column-number-mode t)
 (display-time-mode 1)
+(windmove-default-keybindings)
 (put 'downcase-region 'disabled nil)
 (put 'upcase-region 'disabled nil)
 ;; Write backup files to own directory
 (setq backup-directory-alist
       `(("." . ,(expand-file-name
                  (concat user-emacs-directory "backups")))))
+;; recentfiles
+(recentf-mode 1)
+(setq recentf-max-menu-items 25)
+(global-set-key (kbd "C-x C-r") 'recentf-open-files)
 ;; resize window
 (global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
 (global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
@@ -52,9 +59,6 @@
 ;;(load custom-file)
 
 ;; YASnippet
-;;(add-to-list 'load-path
-;;              "~/.emacs.d/plugins/yasnippet")
-;;(require 'yasnippet)
 (yas-global-mode 1)
 
 ;;
@@ -95,30 +99,11 @@
  '(vhdl-upper-case-keywords t)
  '(vhdl-upper-case-types t))
 
-;;
-;; helm
-;;
-;;(require 'helm)
-;;(require 'helm-config)
-;;(helm-mode 1)
-;; The default "C-x c" is quite close to "C-x C-c", which quits Emacs.
-;; Changed to "C-c h". Note: We must set "C-c h" globally, because we
-;; cannot change `helm-command-prefix-key' once `helm-config' is loaded.
-;;(global-set-key (kbd "C-c h") 'helm-command-prefix)
-;;(global-unset-key (kbd "C-x c"))
-;;(define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action) ; rebind tab to run persistent action
-;;(define-key helm-map (kbd "C-i") 'helm-execute-persistent-action) ; make TAB works in terminal
-;;(define-key helm-map (kbd "C-z")  'helm-select-action) ; list actions using C-z
-
-;;(when (executable-find "curl")
-;;  (setq helm-google-suggest-use-curl-p t))
-
-;;(setq helm-split-window-in-side-p           t ; open helm buffer inside current window, not occupy whole other window
-;;      helm-move-to-line-cycle-in-source     t ; move to end or beginning of source when reaching top or bottom of source.
-;;      helm-ff-search-library-in-sexp        t ; search for library in `require' and `declare-function' sexp.
-;;      helm-scroll-amount                    8 ; scroll 8 lines other window using M-<next>/M-<prior>
-;;      helm-ff-file-name-history-use-recentf t)
-
+;; Functions (load all files in defuns-dir)
+(setq defuns-dir (expand-file-name "defuns" user-emacs-directory))
+(dolist (file (directory-files defuns-dir t "\\w+"))
+  (when (file-regular-p file)
+    (load file)))
 
 
 
