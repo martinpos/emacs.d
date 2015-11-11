@@ -29,11 +29,11 @@
 (recentf-mode 1)
 (setq recentf-max-menu-items 25)
 (global-set-key (kbd "C-x C-r") 'recentf-open-files)
-;; resize window
-(global-set-key (kbd "S-C-<left>") 'shrink-window-horizontally)
-(global-set-key (kbd "S-C-<right>") 'enlarge-window-horizontally)
-(global-set-key (kbd "S-C-<down>") 'shrink-window)
-(global-set-key (kbd "S-C-<up>") 'enlarge-window)
+;; resize window - find appropriate method for sizing the window
+;;(global-set-key (kbd "S-M-C-<left>") 'shrink-window-horizontally)
+;;(global-set-key (kbd "S-M-C-<right>") 'enlarge-window-horizontally)
+;;(global-set-key (kbd "S-M-C-<down>") 'shrink-window)
+;;(global-set-key (kbd "S-M-C-<up>") 'enlarge-window)
 ;; C-mousewheel scales font size
 (global-set-key [C-mouse-4] 'text-scale-increase)
 (global-set-key [C-mouse-5] 'text-scale-decrease)
@@ -104,20 +104,5 @@
 (dolist (file (directory-files defuns-dir t "\\w+"))
   (when (file-regular-p file)
     (load file)))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
