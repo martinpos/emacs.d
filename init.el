@@ -4,7 +4,7 @@
 ;; Nov 12 2015  martin.pos@2lazy.nl  - re-grouped, less comments
 ;; Nov 14 2015  martin.pos@2lazy.nl  - whitespace-mode, ace mode
 ;; Nov 15 2015  martin.pos@nxp.com   - defuns, appearance, fixes
-;;
+;; Nov 19 2015  martin.pos@2lazy.nl  - multiple cursors
 
 ;;
 ;; packages
@@ -107,6 +107,18 @@
 (global-set-key (kbd "M-m") 'jump-char-forward)
 (global-set-key (kbd "M-M") 'jump-char-backward)
 (global-set-key (kbd "s-m") 'jump-char-backward)
+;; multiple cursors
+(global-unset-key (kbd "C-z"))
+(global-set-key (kbd "C-z a") 'mc/mark-all-like-this)
+(global-set-key (kbd "C-z A") 'mc/mark-all-in-region)
+(global-set-key (kbd "C-z w") 'mc/mark-all-words-like-this)
+(global-set-key (kbd "C-z n") 'mc/mark-next-like-this)
+(global-set-key (kbd "C-z N") 'mc/unmark-next-like-this)
+(global-set-key (kbd "C-z p") 'mc/mark-previous-like-this)
+(global-set-key (kbd "C-z P") 'mc/unmark-previous-like-this)
+(global-set-key (kbd "C-z i") 'mc/insert-numbers)
+(global-set-key (kbd "C-z q") 'mc/mark-all-in-region-regexp)
+(global-set-key (kbd "C-z r") 'set-rectangular-region-anchor)
 
 ;; Org mode
 (setq org-src-preserve-indentation t)
@@ -133,7 +145,7 @@
  (insert (concat "\n" (shell-command-to-string command)))
 )
 
-;; from .emacs.d/defuns/buffer-defuns.el
+;; from https://github.com/magnars/.emacs.d/blob/master/defuns/buffer-defuns.el
 (defun cleanup-buffer ()
   "Perform a bunch of operations on the whitespace content of a buffer.
 Including indent-buffer, which should not be called automatically on save."
@@ -169,10 +181,11 @@ If point was already at that position, move point to beginning of line."
       (kill-new filename)
       (message "Copied buffer file name '%s' to the clipboard." filename))))
 
-
-
 ;; customize
 (custom-set-variables
+ '(custom-safe-themes
+   (quote
+    ("4527ad80568d218b57e06ff1cab2e5391ab17e4c3252e74a3ea9d6db2d961db5" "5422b05b20c27caf9fe7a511baa8f3bcbaa3ea823cf54e7105fe759923047a26" default)))
  '(menu-bar-mode nil)
  '(scroll-bar-mode nil)
  '(tool-bar-mode nil)
@@ -180,4 +193,9 @@ If point was already at that position, move point to beginning of line."
  '(vhdl-beautify-options (quote (t t t t t)))
  '(vhdl-upper-case-keywords t)
  '(vhdl-upper-case-types t))
+<<<<<<< HEAD
 
+=======
+(custom-set-faces
+ )
+
