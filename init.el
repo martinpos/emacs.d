@@ -3,6 +3,7 @@
 ;; Nov  8 2015  martin.pos@2lazy.nl  - .emacs -> init.el
 ;; Nov 12 2015  martin.pos@2lazy.nl  - re-grouped, less comments
 ;; Nov 14 2015  martin.pos@2lazy.nl  - whitespace-mode, ace mode
+;; Nov 19 2015  martin.pos@2lazy.nl  - multiple cursors
 ;;
 
 ;;
@@ -34,7 +35,6 @@
 ;; appearance
 ;;
 (set-background-color "gray95")
-
 (global-hl-line-mode 1)
 (set-face-background 'hl-line "white")
 (set-face-attribute 'default nil :height 95)
@@ -82,7 +82,6 @@
 ;;
 ;; key bindings
 ;;
-(global-set-key (kbd "C-z") 'shell)
 (global-set-key (kbd "C-x C-r") 'recentf-open-files)
 (global-set-key (kbd "C-=") 'er/expand-region)
 (global-set-key (kbd "C-c n") 'cleanup-buffer)
@@ -105,6 +104,18 @@
 (global-set-key (kbd "M-m") 'jump-char-forward)
 (global-set-key (kbd "M-M") 'jump-char-backward)
 (global-set-key (kbd "s-m") 'jump-char-backward)
+;; multiple cursors
+(global-unset-key (kbd "C-z"))
+(global-set-key (kbd "C-z a") 'mc/mark-all-like-this)
+(global-set-key (kbd "C-z A") 'mc/mark-all-in-region)
+(global-set-key (kbd "C-z w") 'mc/mark-all-words-like-this)
+(global-set-key (kbd "C-z n") 'mc/mark-next-like-this)
+(global-set-key (kbd "C-z N") 'mc/unmark-next-like-this)
+(global-set-key (kbd "C-z p") 'mc/mark-previous-like-this)
+(global-set-key (kbd "C-z P") 'mc/unmark-previous-like-this)
+(global-set-key (kbd "C-z i") 'mc/insert-numbers)
+(global-set-key (kbd "C-z q") 'mc/mark-all-in-region-regexp)
+(global-set-key (kbd "C-z r") 'set-rectangular-region-anchor)
 
 ;; Org mode
 (setq org-src-preserve-indentation t)
@@ -158,6 +169,13 @@ If point was already at that position, move point to beginning of line."
 
 ;; customize
 (custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   (quote
+    ("4527ad80568d218b57e06ff1cab2e5391ab17e4c3252e74a3ea9d6db2d961db5" "5422b05b20c27caf9fe7a511baa8f3bcbaa3ea823cf54e7105fe759923047a26" default)))
  '(menu-bar-mode nil)
  '(scroll-bar-mode nil)
  '(tool-bar-mode nil)
@@ -165,3 +183,9 @@ If point was already at that position, move point to beginning of line."
  '(vhdl-beautify-options (quote (t t t t t)))
  '(vhdl-upper-case-keywords t)
  '(vhdl-upper-case-types t))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
