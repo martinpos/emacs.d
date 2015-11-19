@@ -3,6 +3,7 @@
 ;; Nov  8 2015  martin.pos@2lazy.nl  - .emacs -> init.el
 ;; Nov 12 2015  martin.pos@2lazy.nl  - re-grouped, less comments
 ;; Nov 14 2015  martin.pos@2lazy.nl  - whitespace-mode, ace mode
+;; Nov 15 2015  martin.pos@nxp.com   - defuns, appearance, fixes
 ;;
 
 ;;
@@ -34,10 +35,9 @@
 ;; appearance
 ;;
 (set-background-color "gray95")
-
 (global-hl-line-mode 1)
-(set-face-background 'hl-line "white")
-(set-face-attribute 'default nil :height 95)
+(set-face-background hl-line-face "gray92")
+(set-face-attribute 'default nil :height 90)
 
 ;;
 ;; whitespace-mode
@@ -78,15 +78,17 @@
 (setq cperl-indent-level 1)
 (setq sentence-end-double-space nil)
 (yas-global-mode 1)
+(setq-default fill-column 130)
 
 ;;
 ;; key bindings
 ;;
-(global-set-key (kbd "C-z") 'shell)
 (global-set-key (kbd "C-x C-r") 'recentf-open-files)
 (global-set-key (kbd "C-=") 'er/expand-region)
 (global-set-key (kbd "C-c n") 'cleanup-buffer)
 (global-set-key [home] 'smart-beginning-of-line)
+(global-set-key (kbd "M-%") 'query-replace-regexp)
+(global-set-key (kbd "C-, f") 'copy-file-name-to-clipboard)
 ;; resize window - find appropriate method for sizing the window
 ;;(global-set-key (kbd "S-M-C-<left>") 'shrink-window-horizontally)
 ;;(global-set-key (kbd "S-M-C-<right>") 'enlarge-window-horizontally)
@@ -100,8 +102,8 @@
 ;; joins the following line onto this one (whattheemacsd.com)
 (global-set-key (kbd "M-j") (lambda () (interactive) (join-line -1)))
 (global-set-key (kbd "<C-enter>") 'inline-shell-command)
-;; ace jump mode
-(global-set-key (kbd "C-0") 'ace-jump-mode)
+;; jump
+(global-set-key (kbd "C--") 'ace-jump-mode)
 (global-set-key (kbd "M-m") 'jump-char-forward)
 (global-set-key (kbd "M-M") 'jump-char-backward)
 (global-set-key (kbd "s-m") 'jump-char-backward)
@@ -156,6 +158,19 @@ If point was already at that position, move point to beginning of line."
     (and (= oldpos (point))
          (beginning-of-line))))
 
+;; from http://emacsredux.com/blog/2013/03/27/copy-filename-to-the-clipboard
+(defun copy-file-name-to-clipboard ()
+  "Copy the current buffer file name to the clipboard."
+  (interactive)
+  (let ((filename (if (equal major-mode 'dired-mode)
+                      default-directory
+                    (buffer-file-name))))
+    (when filename
+      (kill-new filename)
+      (message "Copied buffer file name '%s' to the clipboard." filename))))
+
+
+
 ;; customize
 (custom-set-variables
  '(menu-bar-mode nil)
@@ -165,3 +180,4 @@ If point was already at that position, move point to beginning of line."
  '(vhdl-beautify-options (quote (t t t t t)))
  '(vhdl-upper-case-keywords t)
  '(vhdl-upper-case-types t))
+
