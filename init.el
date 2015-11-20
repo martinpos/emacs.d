@@ -193,9 +193,7 @@ If point was already at that position, move point to beginning of line."
  '(vhdl-beautify-options (quote (t t t t t)))
  '(vhdl-upper-case-keywords t)
  '(vhdl-upper-case-types t))
-<<<<<<< HEAD
-
-=======
+
 (custom-set-faces
  )
 
