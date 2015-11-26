@@ -5,12 +5,16 @@
 ;; Nov 14 2015  martin.pos@2lazy.nl  - whitespace-mode, ace mode
 ;; Nov 15 2015  martin.pos@nxp.com   - defuns, appearance, fixes
 ;; Nov 19 2015  martin.pos@2lazy.nl  - multiple cursors
+;; Nov 20 2015  martin.pos@nxp.com   - ibuffer column width
+;; Nov 23 2015  martin.pos@nxp.com   - insert-shell-command
+;;                                   - auto-fill
+;;
 
 ;;
 ;; packages
 ;;
 (setq package-archives '(("gnu" . "http://elpa.gnu.org/packages/")
-                         ("marmalade" . "https://marmalade-repo.org/packages/")
+                         ("marmalade" . "http://marmalade-repo.org/packages/")
                          ("melpa" . "http://melpa.org/packages/")))
 (package-initialize)
 (require 's)
@@ -18,14 +22,14 @@
 ;;
 ;; .emacs.d setup
 ;;
-;; Write backup files to own directory
 (setq backup-directory-alist
       `(("." . ,(expand-file-name
                  (concat user-emacs-directory "backups")))))
-;; Keep emacs Custom-settings in separate file
+(setq savehist-file
+      (expand-file-name
+                 (concat user-emacs-directory "savehist")))
 ;;(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
 ;;(load custom-file)
-;; Functions (load all files in defuns-dir)
 (setq defuns-dir (expand-file-name "defuns" user-emacs-directory))
 (dolist (file (directory-files defuns-dir t "\\w+"))
   (when (file-regular-p file)
@@ -38,27 +42,33 @@
 (global-hl-line-mode 1)
 (set-face-background hl-line-face "gray92")
 (set-face-attribute 'default nil :height 90)
+(setq ibuffer-formats
+      '((mark modified read-only " "
+              (name 50 50 :left :elide) " "
+              (size 9 -1 :right) " "
+              (mode 16 16 :left :elide) " " filename-and-process)
+        (mark " " (name 16 -1) " " filename)))
 
 ;;
 ;; whitespace-mode
 ;;
 ;;(require 'whitespace)
 (progn
- (whitespace-mode -1)
- (global-whitespace-mode -1)
- (setq whitespace-line-column 130)
- ;; NB no space-mark, tab-mark or newline-mark in whitespace-style
- (setq whitespace-style '(face spaces tabs empty))
- (setq space-face (make-face 'space-face))
- (set-face-background 'space-face "gray90")
- (set-face-foreground 'space-face "white")
- (setq whitespace-space 'space-face)
- (setq tab-face (make-face 'tab-face))
- (set-face-background 'tab-face "gray75")
- (setq whitespace-tab 'tab-face)
- (whitespace-mode 1)
- (global-whitespace-mode 1)
- )
+  (whitespace-mode -1)
+  (global-whitespace-mode -1)
+  (setq whitespace-line-column 130)
+  ;; NB no space-mark, tab-mark or newline-mark in whitespace-style
+  (setq whitespace-style '(face spaces tabs empty))
+  (setq space-face (make-face 'space-face))
+  (set-face-background 'space-face "gray90")
+  (set-face-foreground 'space-face "white")
+  (setq whitespace-space 'space-face)
+  (setq tab-face (make-face 'tab-face))
+  (set-face-background 'tab-face "gray75")
+  (setq whitespace-tab 'tab-face)
+  (whitespace-mode 1)
+  (global-whitespace-mode 1)
+  )
 
 ;;
 ;; generic
@@ -79,6 +89,8 @@
 (setq sentence-end-double-space nil)
 (yas-global-mode 1)
 (setq-default fill-column 130)
+(add-hook 'text-mode-hook 'turn-on-auto-fill)
+(savehist-mode 1)
 
 ;;
 ;; key bindings
@@ -89,6 +101,10 @@
 (global-set-key [home] 'smart-beginning-of-line)
 (global-set-key (kbd "M-%") 'query-replace-regexp)
 (global-set-key (kbd "C-, f") 'copy-file-name-to-clipboard)
+(global-set-key (kbd "C-, y") 'find-file-at-point)
+(global-set-key (kbd "<C-enter>") 'inline-shell-command)
+(global-set-key (kbd "<M-enter>") 'filter-by-shell-command)
+(global-set-key (kbd "<C-M-enter>") 'insert-shell-command)
 ;; resize window - find appropriate method for sizing the window
 ;;(global-set-key (kbd "S-M-C-<left>") 'shrink-window-horizontally)
 ;;(global-set-key (kbd "S-M-C-<right>") 'enlarge-window-horizontally)
@@ -101,9 +117,8 @@
 (move-text-default-bindings)
 ;; joins the following line onto this one (whattheemacsd.com)
 (global-set-key (kbd "M-j") (lambda () (interactive) (join-line -1)))
-(global-set-key (kbd "<C-enter>") 'inline-shell-command)
 ;; jump
-(global-set-key (kbd "C--") 'ace-jump-mode)
+(global-set-key (kbd "C-+") 'ace-jump-mode)
 (global-set-key (kbd "M-m") 'jump-char-forward)
 (global-set-key (kbd "M-M") 'jump-char-backward)
 (global-set-key (kbd "s-m") 'jump-char-backward)
@@ -130,20 +145,56 @@
 ;;
 (defun inline-shell-command ()
   "execute region or current line as shell command"
- (interactive)
- (if (use-region-p)
-  (setq
-   min (region-beginning)
-   max (region-end)
+  (interactive)
+  (if (use-region-p)
+      (setq
+       start (region-beginning)
+       end (region-end)
+       )
+    (setq
+     start (point-at-bol)
+     end (point-at-eol)
+     )
+    )
+  (goto-char end)
+  (setq command (concat (buffer-substring start end) "\n"))
+  (insert (concat "\n" (shell-command-to-string command)))
   )
-  (setq
-   min (point-at-bol)
-   max (point-at-eol)
+
+;;
+;; Nov 22 2015  martin.pos@nxp.com - filter-by-shell-command
+;;
+;; inspired by: http://www.emacswiki.org/emacs/ExecuteExternalCommand
+;;
+(defun filter-by-shell-command ()
+  "filter the region or current line by a execute region or current line as shell command"
+  (interactive)
+  (if (use-region-p)
+      (setq
+       start (region-beginning)
+       end (region-end)
+       )
+    (setq
+     start (point-at-bol)
+     end (point-at-eol)
+     )
+    )
+  (setq input (concat (buffer-substring start end) "\n"))
+  (setq command (read-shell-command "Shell command: "))
+  (goto-char end)
+  (shell-command-on-region start end command t t)
+  (exchange-point-and-mark)
   )
- )
- (setq command (concat (buffer-substring min max) "\n"))
- (insert (concat "\n" (shell-command-to-string command)))
-)
+
+;;
+;; Nov 23 2015  martin.pos@nxp.com - insert-shell-command
+;;
+(defun insert-shell-command ()
+  "insert shell command in buffer"
+  (interactive)
+  (setq command (read-shell-command "Shell command: "))
+  (insert (shell-command-to-string command))
+  )
 
 ;; from https://github.com/magnars/.emacs.d/blob/master/defuns/buffer-defuns.el
 (defun cleanup-buffer ()
@@ -196,4 +247,3 @@ If point was already at that position, move point to beginning of line."
 
 (custom-set-faces
  )
-
