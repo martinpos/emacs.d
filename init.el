@@ -8,7 +8,9 @@
 ;; Nov 20 2015  martin.pos@nxp.com   - ibuffer column width
 ;; Nov 23 2015  martin.pos@nxp.com   - insert-shell-command
 ;;                                   - auto-fill
-;;
+;; Dec 03 2015  martin.pos@nxp.com   - visit-file-at-point
+;;                                   - disable electric-pair-mode
+;;                                   - insert-file-name
 
 ;;
 ;; packages
@@ -74,7 +76,7 @@
 ;; generic
 ;;
 (delete-selection-mode 1)
-(electric-pair-mode 1)
+(electric-pair-mode 0)
 (setq inhibit-splash-screen t)
 (transient-mark-mode 0)
 (setq column-number-mode t)
@@ -100,11 +102,16 @@
 (global-set-key (kbd "C-c n") 'cleanup-buffer)
 (global-set-key [home] 'smart-beginning-of-line)
 (global-set-key (kbd "M-%") 'query-replace-regexp)
-(global-set-key (kbd "C-, f") 'copy-file-name-to-clipboard)
-(global-set-key (kbd "C-, y") 'find-file-at-point)
+(global-set-key (kbd "C-, F") 'copy-file-name-to-clipboard)
+(global-set-key (kbd "C-, y") 'visit-file-at-point)
+(global-set-key (kbd "C-, f") 'insert-file-name)
+
 (global-set-key (kbd "<C-enter>") 'inline-shell-command)
 (global-set-key (kbd "<M-enter>") 'filter-by-shell-command)
 (global-set-key (kbd "<C-M-enter>") 'insert-shell-command)
+(global-set-key (kbd "<C-return>") 'inline-shell-command)
+(global-set-key (kbd "<M-return>") 'filter-by-shell-command)
+(global-set-key (kbd "<C-M-return>") 'insert-shell-command)
 ;; resize window - find appropriate method for sizing the window
 ;;(global-set-key (kbd "S-M-C-<left>") 'shrink-window-horizontally)
 ;;(global-set-key (kbd "S-M-C-<right>") 'enlarge-window-horizontally)
@@ -196,6 +203,15 @@
   (insert (shell-command-to-string command))
   )
 
+;;
+;; Dec 03 2015  martin.pos@nxp.com - visit-file-at-point
+;;
+;; inspired by comment at http://stackoverflow.com/questions/3139970/open-a-file-at-line-with-filenameline-syntax
+(defun visit-file-at-point ()
+  "visit file under point, without prompt"
+  (interactive)
+  (find-file(ffap-guesser)))
+
 ;; from https://github.com/magnars/.emacs.d/blob/master/defuns/buffer-defuns.el
 (defun cleanup-buffer ()
   "Perform a bunch of operations on the whitespace content of a buffer.
@@ -231,6 +247,29 @@ If point was already at that position, move point to beginning of line."
     (when filename
       (kill-new filename)
       (message "Copied buffer file name '%s' to the clipboard." filename))))
+
+;; from http://stackoverflow.com/questions/16764502/insert-filename-using-ido
+(defun insert-file-name (filename &optional args)
+  "Insert name of file FILENAME into buffer after point.
+
+  Prefixed with \\[universal-argument], expand the file name to
+  its fully canocalized path.  See `expand-file-name'.
+
+  Prefixed with \\[negative-argument], use relative path to file
+  name from current directory, `default-directory'.  See
+  `file-relative-name'.
+
+  The default with no prefix is to insert the file name exactly as
+  it appears in the minibuffer prompt."
+  ;; Based on insert-file in Emacs -- ashawley 20080926
+  (interactive `(,(ido-read-file-name "File Name: ")
+                 ,current-prefix-arg))
+  (cond ((eq '- args)
+         (insert (expand-file-name filename)))
+        ((not (null args))
+         (insert filename))
+        (t
+         (insert (file-relative-name filename)))))
 
 ;; customize
 (custom-set-variables
