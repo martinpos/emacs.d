@@ -11,6 +11,10 @@
 ;; Dec 03 2015  martin.pos@nxp.com   - visit-file-at-point
 ;;                                   - disable electric-pair-mode
 ;;                                   - insert-file-name
+;; Dec 07 2015  martin.pos@nxp.com   - cua-selection-mode
+;; Dec 09 2015  martin.pos@nxp.com   - cperl-mode
+;; Feb 09 2016  martin.pos@nxp.com   - wrap-region
+;; Feb 10 2016  martin.pos@nxp.com   - fix: ffap initialize
 
 ;;
 ;; packages
@@ -20,6 +24,7 @@
                          ("melpa" . "http://melpa.org/packages/")))
 (package-initialize)
 (require 's)
+(require 'ffap)
 
 ;;
 ;; .emacs.d setup
@@ -42,6 +47,7 @@
 ;;
 (set-background-color "gray95")
 (global-hl-line-mode 1)
+(set-face-background hl-line-face "white")
 (set-face-background hl-line-face "gray92")
 (set-face-attribute 'default nil :height 90)
 (setq ibuffer-formats
@@ -60,6 +66,7 @@
   (global-whitespace-mode -1)
   (setq whitespace-line-column 130)
   ;; NB no space-mark, tab-mark or newline-mark in whitespace-style
+
   (setq whitespace-style '(face spaces tabs empty))
   (setq space-face (make-face 'space-face))
   (set-face-background 'space-face "gray90")
@@ -87,12 +94,30 @@
 (recentf-mode 1)
 (setq recentf-max-menu-items 100)
 (setq c-basic-offset 1)
-(setq cperl-indent-level 1)
+(setq cperl-indent-level 1
+      cperl-close-paren-offset -1
+      cperl-continued-statement-offset 1
+      cperl-indent-parens-as-block t
+      cperl-tab-always-indent t)
+(setq cperl-highlight-variables-indiscriminately t)
+(defalias 'perl-mode 'cperl-mode)
 (setq sentence-end-double-space nil)
 (yas-global-mode 1)
 (setq-default fill-column 130)
 (add-hook 'text-mode-hook 'turn-on-auto-fill)
 (savehist-mode 1)
+(cua-selection-mode t)
+(setq cua-auto-tabify-rectangles nil)
+(setq cua-keep-region-after-copy t)
+(wrap-region-mode t)
+
+;; Preset width nlinum
+(add-hook 'nlinum-mode-hook
+          (lambda ()
+            (unless (boundp 'nlinum--width)
+              (setq nlinum--width
+                (length (number-to-string
+                         (count-lines (point-min) (point-max))))))))
 
 ;;
 ;; key bindings
@@ -109,9 +134,6 @@
 (global-set-key (kbd "<C-enter>") 'inline-shell-command)
 (global-set-key (kbd "<M-enter>") 'filter-by-shell-command)
 (global-set-key (kbd "<C-M-enter>") 'insert-shell-command)
-(global-set-key (kbd "<C-return>") 'inline-shell-command)
-(global-set-key (kbd "<M-return>") 'filter-by-shell-command)
-(global-set-key (kbd "<C-M-return>") 'insert-shell-command)
 ;; resize window - find appropriate method for sizing the window
 ;;(global-set-key (kbd "S-M-C-<left>") 'shrink-window-horizontally)
 ;;(global-set-key (kbd "S-M-C-<right>") 'enlarge-window-horizontally)
@@ -273,11 +295,16 @@ If point was already at that position, move point to beginning of line."
 
 ;; customize
 (custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
  '(custom-safe-themes
    (quote
     ("4527ad80568d218b57e06ff1cab2e5391ab17e4c3252e74a3ea9d6db2d961db5" "5422b05b20c27caf9fe7a511baa8f3bcbaa3ea823cf54e7105fe759923047a26" default)))
  '(menu-bar-mode nil)
  '(scroll-bar-mode nil)
+ '(send-mail-function (quote sendmail-send-it))
  '(tool-bar-mode nil)
  '(vhdl-basic-offset 1)
  '(vhdl-beautify-options (quote (t t t t t)))
@@ -285,4 +312,8 @@ If point was already at that position, move point to beginning of line."
  '(vhdl-upper-case-types t))
 
 (custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
  )
