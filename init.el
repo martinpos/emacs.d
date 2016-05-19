@@ -15,6 +15,7 @@
 ;; Dec 09 2015  martin.pos@nxp.com   - cperl-mode
 ;; Feb 09 2016  martin.pos@nxp.com   - wrap-region
 ;; Feb 10 2016  martin.pos@nxp.com   - fix: ffap initialize
+;; May 19 2016  martin.pos@nxp.com   - spelling, flyspell
 
 ;;
 ;; packages
@@ -47,7 +48,6 @@
 ;;
 (set-background-color "gray95")
 (global-hl-line-mode 1)
-(set-face-background hl-line-face "white")
 (set-face-background hl-line-face "gray92")
 (set-face-attribute 'default nil :height 90)
 (setq ibuffer-formats
@@ -56,6 +56,8 @@
               (size 9 -1 :right) " "
               (mode 16 16 :left :elide) " " filename-and-process)
         (mark " " (name 16 -1) " " filename)))
+(add-to-list 'default-frame-alist '(background-color . "gray95"))
+(add-to-list 'default-frame-alist '(foreground-color . "black"))
 
 ;;
 ;; whitespace-mode
@@ -110,6 +112,14 @@
 (setq cua-auto-tabify-rectangles nil)
 (setq cua-keep-region-after-copy t)
 (wrap-region-mode t)
+
+;;
+;; spelling - May 19 2016  martin.pos@nxp.com
+;;
+;; see http://stackoverflow.com/questions/15891808/emacs-how-to-enable-automatic-spell-check-by-default
+;;
+(add-hook 'text-mode-hook 'flyspell-mode)
+(add-hook 'prog-mode-hook 'flyspell-prog-mode)
 
 ;; Preset width nlinum
 (add-hook 'nlinum-mode-hook
