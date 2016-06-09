@@ -16,6 +16,8 @@
 ;; Feb 09 2016  martin.pos@nxp.com   - wrap-region
 ;; Feb 10 2016  martin.pos@nxp.com   - fix: ffap initialize
 ;; May 19 2016  martin.pos@nxp.com   - spelling, flyspell
+;; Jun 09 2016  martin.pos@nxp.com   - ido settings, virtual buffers
+;;                                   - hippie-exand settings
 
 ;;
 ;; packages
@@ -42,6 +44,18 @@
 (dolist (file (directory-files defuns-dir t "\\w+"))
   (when (file-regular-p file)
     (load file)))
+
+;;
+;; proxy experiments for erc - May 30 2016  martin.pos@nxp.com
+;;
+(defvar http-proxy-host "http://emea.nics.nxp.com")
+(defvar http-proxy-port 8080)
+(defun open-http-proxy-stream (name buffer host service &rest parameters)
+  "Open network stream via http proxy. Proxy is defined by variables http-proxy-host and http-proxy-port."
+  (let ((tmp-process (apply 'open-network-stream name buffer http-proxy-host http-proxy-port parameters)))
+  (process-send-string name (format "CONNECT %s:%d HTTP/1.1\n\n" host service))
+  tmp-process))
+(setq erc-server-connect-function 'open-http-proxy-stream)
 
 ;;
 ;; appearance
@@ -93,8 +107,6 @@
 (windmove-default-keybindings)
 (put 'downcase-region 'disabled nil)
 (put 'upcase-region 'disabled nil)
-(recentf-mode 1)
-(setq recentf-max-menu-items 100)
 (setq c-basic-offset 1)
 (setq cperl-indent-level 1
       cperl-close-paren-offset -1
@@ -112,6 +124,29 @@
 (setq cua-auto-tabify-rectangles nil)
 (setq cua-keep-region-after-copy t)
 (wrap-region-mode t)
+(recentf-mode 1)
+(setq recentf-max-menu-items 200
+      recentf-max-menu-items 50)
+(setq-default history-length 5000)
+(setq ido-create-new-buffer (quote never)
+      ido-enable-flex-matching t
+      ido-enable-last-directory-history nil
+      ido-enable-regexp nil
+      ido-max-directory-size 300000
+      ido-max-file-prompt-width 0.1
+      ido-use-filename-at-point (quote guess)
+      ido-use-url-at-point t
+      ido-use-virtual-buffers t)
+(setq hippie-expand-try-functions-list '(try-expand-dabbrev
+                                         try-expand-dabbrev-all-buffers
+                                         try-expand-dabbrev-from-kill
+                                         try-complete-file-name-partially
+                                         try-complete-file-name
+                                         try-expand-all-abbrevs
+                                         try-expand-list
+                                         try-expand-line
+                                         try-complete-lisp-symbol-partially
+                                         try-complete-lisp-symbol))
 
 ;;
 ;; spelling - May 19 2016  martin.pos@nxp.com
@@ -133,12 +168,12 @@
 ;; key bindings
 ;;
 (global-set-key (kbd "C-x C-r") 'recentf-open-files)
+(global-set-key (kbd "C-x y") 'visit-file-at-point)
 (global-set-key (kbd "C-=") 'er/expand-region)
 (global-set-key (kbd "C-c n") 'cleanup-buffer)
 (global-set-key [home] 'smart-beginning-of-line)
 (global-set-key (kbd "M-%") 'query-replace-regexp)
 (global-set-key (kbd "C-, F") 'copy-file-name-to-clipboard)
-(global-set-key (kbd "C-, y") 'visit-file-at-point)
 (global-set-key (kbd "C-, f") 'insert-file-name)
 
 (global-set-key (kbd "<C-enter>") 'inline-shell-command)
@@ -302,6 +337,31 @@ If point was already at that position, move point to beginning of line."
          (insert filename))
         (t
          (insert (file-relative-name filename)))))
+
+;; from https://www.emacswiki.org/emacs/RecentFiles#toc8
+(defun recentf-interactive-complete ()
+  "find a file in the recently open file using ido for completion"
+  (interactive)
+  (let* ((all-files recentf-list)
+         (file-assoc-list (mapcar (lambda (x) (cons (file-name-nondirectory x) x)) all-files))
+         (filename-list (remove-duplicates (mapcar 'car file-assoc-list) :test 'string=))
+         (ido-make-buffer-list-hook
+          (lambda ()
+            (setq ido-temp-list filename-list)))
+         (filename (ido-read-buffer "Find Recent File: "))
+         (result-list (delq nil (mapcar (lambda (x) (if (string= (car x) filename) (cdr x))) file-assoc-list)))
+         (result-length (length result-list)))
+    (find-file 
+     (cond 
+      ((= result-length 0) filename)
+      ((= result-length 1) (car result-list))
+      ( t
+        (let ( (ido-make-buffer-list-hook
+                (lambda ()
+                  (setq ido-temp-list result-list))))
+          (ido-read-buffer (format "%d matches:" result-length))))
+      ))))
+
 
 ;; customize
 (custom-set-variables
