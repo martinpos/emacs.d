@@ -18,6 +18,8 @@
 ;; May 19 2016  martin.pos@nxp.com   - spelling, flyspell
 ;; Jun 09 2016  martin.pos@nxp.com   - ido settings, virtual buffers
 ;;                                   - hippie-exand settings
+;; Jul 14 2016  martin.pos@nxp.com   - default keybindings for query-replace(-regexp)?
+;; Nov 22 2016  martin.pos@nxp.com   - duplicate-line
 
 ;;
 ;; packages
@@ -172,7 +174,6 @@
 (global-set-key (kbd "C-=") 'er/expand-region)
 (global-set-key (kbd "C-c n") 'cleanup-buffer)
 (global-set-key [home] 'smart-beginning-of-line)
-(global-set-key (kbd "M-%") 'query-replace-regexp)
 (global-set-key (kbd "C-, F") 'copy-file-name-to-clipboard)
 (global-set-key (kbd "C-, f") 'insert-file-name)
 
@@ -191,6 +192,7 @@
 (move-text-default-bindings)
 ;; joins the following line onto this one (whattheemacsd.com)
 (global-set-key (kbd "M-j") (lambda () (interactive) (join-line -1)))
+(global-set-key (kbd "C-c C-d") 'duplicate-line)
 ;; jump
 (global-set-key (kbd "C-+") 'ace-jump-mode)
 (global-set-key (kbd "M-m") 'jump-char-forward)
@@ -241,7 +243,7 @@
 ;; inspired by: http://www.emacswiki.org/emacs/ExecuteExternalCommand
 ;;
 (defun filter-by-shell-command ()
-  "filter the region or current line by a execute region or current line as shell command"
+  "filter the region or current line as shell command"
   (interactive)
   (if (use-region-p)
       (setq
@@ -362,6 +364,42 @@ If point was already at that position, move point to beginning of line."
           (ido-read-buffer (format "%d matches:" result-length))))
       ))))
 
+;; from http://stackoverflow.com/questions/88399/how-do-i-duplicate-a-whole-line-in-emacs
+(defun duplicate-line (arg)
+  "Duplicate current line, leaving point in lower line."
+  (interactive "*p")
+
+  ;; save the point for undo
+  (setq buffer-undo-list (cons (point) buffer-undo-list))
+
+  ;; local variables for start and end of line
+  (let ((bol (save-excursion (beginning-of-line) (point)))
+        eol)
+    (save-excursion
+
+      ;; don't use forward-line for this, because you would have
+      ;; to check whether you are at the end of the buffer
+      (end-of-line)
+      (setq eol (point))
+
+      ;; store the line and disable the recording of undo information
+      (let ((line (buffer-substring bol eol))
+            (buffer-undo-list t)
+            (count arg))
+        ;; insert the line arg times
+        (while (> count 0)
+          (newline)         ;; because there is no newline in 'line'
+          (insert line)
+          (setq count (1- count)))
+        )
+
+      ;; create the undo information
+      (setq buffer-undo-list (cons (cons eol (point)) buffer-undo-list)))
+    ) ; end-of-let
+
+  ;; put the point in the lowest line and return
+  (next-line arg)
+)
 
 ;; customize
 (custom-set-variables
