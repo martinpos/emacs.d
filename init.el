@@ -20,6 +20,7 @@
 ;;                                   - hippie-exand settings
 ;; Jul 14 2016  martin.pos@nxp.com   - default keybindings for query-replace(-regexp)?
 ;; Nov 22 2016  martin.pos@nxp.com   - duplicate-line
+;; Feb 27 2017  martin.pos@nxp.com   - evil-numbers
 
 ;;
 ;; packages
@@ -174,9 +175,9 @@
 (global-set-key (kbd "C-=") 'er/expand-region)
 (global-set-key (kbd "C-c n") 'cleanup-buffer)
 (global-set-key [home] 'smart-beginning-of-line)
-(global-set-key (kbd "C-, F") 'copy-file-name-to-clipboard)
-(global-set-key (kbd "C-, f") 'insert-file-name)
-
+(global-set-key (kbd "C-x M-f") 'insert-file-name)
+(global-set-key (kbd "C-x M-F") 'copy-file-name-to-clipboard)
+(global-set-key (kbd "M-\"") 'insert-pair)
 (global-set-key (kbd "<C-enter>") 'inline-shell-command)
 (global-set-key (kbd "<M-enter>") 'filter-by-shell-command)
 (global-set-key (kbd "<C-M-enter>") 'insert-shell-command)
@@ -210,6 +211,9 @@
 (global-set-key (kbd "C-z i") 'mc/insert-numbers)
 (global-set-key (kbd "C-z q") 'mc/mark-all-in-region-regexp)
 (global-set-key (kbd "C-z r") 'set-rectangular-region-anchor)
+;; evil-numbers
+(global-set-key (kbd "<kp-add>") 'evil-numbers/inc-at-pt)
+(global-set-key (kbd "<kp-subtract>") 'evil-numbers/dec-at-pt)
 
 ;; Org mode
 (setq org-src-preserve-indentation t)
@@ -411,6 +415,9 @@ If point was already at that position, move point to beginning of line."
    (quote
     ("4527ad80568d218b57e06ff1cab2e5391ab17e4c3252e74a3ea9d6db2d961db5" "5422b05b20c27caf9fe7a511baa8f3bcbaa3ea823cf54e7105fe759923047a26" default)))
  '(menu-bar-mode nil)
+ '(package-selected-packages
+   (quote
+    (yasnippet wrap-region thing-cmds s nlinum multiple-cursors move-text magit linum-relative jump-char htmlize frame-cmds expand-region evil-numbers dired+ better-defaults ace-jump-mode)))
  '(scroll-bar-mode nil)
  '(send-mail-function (quote sendmail-send-it))
  '(tool-bar-mode nil)
