@@ -21,6 +21,7 @@
 ;; Jul 14 2016  martin.pos@nxp.com   - default keybindings for query-replace(-regexp)?
 ;; Nov 22 2016  martin.pos@nxp.com   - duplicate-line
 ;; Feb 27 2017  martin.pos@nxp.com   - evil-numbers
+;; 2017-06-22  martin.pos@nxp.com    - underline-text
 
 ;;
 ;; packages
@@ -181,6 +182,8 @@
 (global-set-key (kbd "<C-enter>") 'inline-shell-command)
 (global-set-key (kbd "<M-enter>") 'filter-by-shell-command)
 (global-set-key (kbd "<C-M-enter>") 'insert-shell-command)
+(global-set-key (kbd "C-c u") 'underline-text)
+
 ;; resize window - find appropriate method for sizing the window
 ;;(global-set-key (kbd "S-M-C-<left>") 'shrink-window-horizontally)
 ;;(global-set-key (kbd "S-M-C-<right>") 'enlarge-window-horizontally)
@@ -372,20 +375,16 @@ If point was already at that position, move point to beginning of line."
 (defun duplicate-line (arg)
   "Duplicate current line, leaving point in lower line."
   (interactive "*p")
-
   ;; save the point for undo
   (setq buffer-undo-list (cons (point) buffer-undo-list))
-
   ;; local variables for start and end of line
   (let ((bol (save-excursion (beginning-of-line) (point)))
         eol)
     (save-excursion
-
       ;; don't use forward-line for this, because you would have
       ;; to check whether you are at the end of the buffer
       (end-of-line)
       (setq eol (point))
-
       ;; store the line and disable the recording of undo information
       (let ((line (buffer-substring bol eol))
             (buffer-undo-list t)
@@ -396,14 +395,74 @@ If point was already at that position, move point to beginning of line."
           (insert line)
           (setq count (1- count)))
         )
-
       ;; create the undo information
       (setq buffer-undo-list (cons (cons eol (point)) buffer-undo-list)))
     ) ; end-of-let
-
   ;; put the point in the lowest line and return
   (next-line arg)
 )
+
+;; from http://www.nicholasvanhorn.com/posts/underline-text-in-emacs.html
+(defun underline-text (arg)
+  "Inserts a line under the current line, filled with a default
+underline character `='. If point had been at the end of the
+line, moves point to the beginning of the line directly following
+the underlining. It does not underline the line's leading
+whitespace, trailing whitespace, or comment symbols. With prefix `C-u'
+prompts user for a custom underline character. With prefix `C-u
+C-u', does not underline whitespace embedded in the line."
+
+  ; Copyright 2015 Boruch Baum <boruch_baum@gmx.com>, GPL3+ license
+  (interactive "p")
+  (let* ((original-point (point))
+         (underline-char
+           (replace-regexp-in-string "[[:cntrl:][:space:]]" "="
+           (if (= arg 1)
+               "-"
+             (char-to-string
+           (read-char "What character to underline with?")))))
+         (original-point-is-eol
+           (when (looking-at "$") t))
+         (original-point-is-eob
+           (= original-point (point-max))))
+    (beginning-of-line)
+    (unless
+      (when (looking-at "[[:space:]]*$")
+        (beginning-of-line 0)
+        (when (looking-at "[[:space:]]*$")
+          (goto-char original-point)
+          (message "nothing to do")))
+      (insert
+        (buffer-substring (line-beginning-position) (line-end-position))
+        "\n")
+      (save-restriction
+        (narrow-to-region
+          (progn
+            (goto-char (1- (re-search-forward "[^[:space:]]" nil t)))
+            (cond
+              ((looking-at ";+")   (match-end 0))
+              ((looking-at "#+")   (match-end 0))
+              ((looking-at "//+")  (match-end 0))
+              ((looking-at "/\\*+") (match-end 0))
+              (t (point))))
+          (1+ (progn
+        (goto-char (line-end-position))
+            (re-search-backward "[^[:space:]]" nil t))))
+        (untabify (point-min) (point-max))
+        (goto-char (point-min))
+        (if (= arg 16)
+          (while (re-search-forward "[^[:space:]]" nil t)
+            (replace-match underline-char nil))
+         (re-search-forward "[^[:space:]]" nil t)
+         (goto-char (1- (point)))
+         (while (re-search-forward "." nil t)
+           (replace-match underline-char nil)))
+        (widen))
+      (if original-point-is-eob
+        (goto-char (point-max))
+       (if original-point-is-eol
+         (goto-char (re-search-forward "^"))
+        (goto-char original-point))))))
 
 ;; customize
 (custom-set-variables
