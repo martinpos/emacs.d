@@ -21,7 +21,14 @@
 ;; Jul 14 2016  martin.pos@nxp.com   - default keybindings for query-replace(-regexp)?
 ;; Nov 22 2016  martin.pos@nxp.com   - duplicate-line
 ;; Feb 27 2017  martin.pos@nxp.com   - evil-numbers
-;; 2017-06-22  martin.pos@nxp.com    - underline-text
+;; Jun 22 2017  martin.pos@nxp.com   - underline-text
+;; Jun 26 2017  martin.pos@nxp.com   - zap-up-to-char (requires misc)
+;;                                   - hippie-expand and ido
+;; Jun 28 2017  martin.pos@nxp.com   - cursor-chg
+;;                                   - force cperl mode over perl mode
+;;                                   - hl-line-face darker
+;;                                   - show-paren-mode
+;;                                   - windmove on meta key
 
 ;;
 ;; packages
@@ -32,6 +39,8 @@
 (package-initialize)
 (require 's)
 (require 'ffap)
+(require 'misc)
+(require 'cursor-chg)
 
 ;;
 ;; .emacs.d setup
@@ -66,7 +75,7 @@
 ;;
 (set-background-color "gray95")
 (global-hl-line-mode 1)
-(set-face-background hl-line-face "gray92")
+(set-face-background hl-line-face "gray80")
 (set-face-attribute 'default nil :height 90)
 (setq ibuffer-formats
       '((mark modified read-only " "
@@ -76,6 +85,7 @@
         (mark " " (name 16 -1) " " filename)))
 (add-to-list 'default-frame-alist '(background-color . "gray95"))
 (add-to-list 'default-frame-alist '(foreground-color . "black"))
+(add-to-list 'auto-mode-alist '("\\.f\\'" . text-mode))
 
 ;;
 ;; whitespace-mode
@@ -108,7 +118,7 @@
 (transient-mark-mode 0)
 (setq column-number-mode t)
 (display-time-mode 1)
-(windmove-default-keybindings)
+(windmove-default-keybindings 'meta)
 (put 'downcase-region 'disabled nil)
 (put 'upcase-region 'disabled nil)
 (setq c-basic-offset 1)
@@ -118,7 +128,7 @@
       cperl-indent-parens-as-block t
       cperl-tab-always-indent t)
 (setq cperl-highlight-variables-indiscriminately t)
-(defalias 'perl-mode 'cperl-mode)
+(fset 'perl-mode 'cperl-mode)
 (setq sentence-end-double-space nil)
 (yas-global-mode 1)
 (setq-default fill-column 130)
@@ -132,7 +142,8 @@
 (setq recentf-max-menu-items 200
       recentf-max-menu-items 50)
 (setq-default history-length 5000)
-(setq ido-create-new-buffer (quote never)
+(setq ido-mode t
+      ido-create-new-buffer (quote never)
       ido-enable-flex-matching t
       ido-enable-last-directory-history nil
       ido-enable-regexp nil
@@ -141,16 +152,31 @@
       ido-use-filename-at-point (quote guess)
       ido-use-url-at-point t
       ido-use-virtual-buffers t)
-(setq hippie-expand-try-functions-list '(try-expand-dabbrev
-                                         try-expand-dabbrev-all-buffers
-                                         try-expand-dabbrev-from-kill
-                                         try-complete-file-name-partially
-                                         try-complete-file-name
-                                         try-expand-all-abbrevs
-                                         try-expand-list
-                                         try-expand-line
-                                         try-complete-lisp-symbol-partially
-                                         try-complete-lisp-symbol))
+(toggle-cursor-type-when-idle 1)
+(change-cursor-mode 1)
+(show-paren-mode)
+
+;;(setq hippie-expand-try-functions-list '(try-expand-dabbrev
+;;                                         try-expand-dabbrev-all-buffers
+;;                                         try-expand-dabbrev-from-kill
+;;                                         try-complete-file-name-partially
+;;                                         try-complete-file-name
+;;                                         try-expand-all-abbrevs
+;;                                         try-expand-list
+;;                                         try-expand-line
+;;                                         try-complete-lisp-symbol-partially
+;;                                         try-complete-lisp-symbol))
+
+(setq hippie-expand-try-functions-list '(try-complete-file-name-partially
+    try-complete-file-name
+    try-expand-all-abbrevs
+    try-expand-list
+    try-expand-line
+    try-expand-dabbrev
+    try-expand-dabbrev-all-buffers
+    try-expand-dabbrev-from-kill
+    try-complete-lisp-symbol-partially
+    try-complete-lisp-symbol))
 
 ;;
 ;; spelling - May 19 2016  martin.pos@nxp.com
@@ -183,6 +209,14 @@
 (global-set-key (kbd "<M-enter>") 'filter-by-shell-command)
 (global-set-key (kbd "<C-M-enter>") 'insert-shell-command)
 (global-set-key (kbd "C-c u") 'underline-text)
+(global-set-key (kbd "M-z") 'zap-up-to-char)
+(global-set-key (kbd "C-?") 'my-expand-file-name-at-point)
+(global-set-key (kbd "<tab>") 'hippie-expand)
+
+;; to be done
+(global-set-key (kbd "C-M-?") 't)
+(global-set-key (kbd "M-?")  't)
+
 
 ;; resize window - find appropriate method for sizing the window
 ;;(global-set-key (kbd "S-M-C-<left>") 'shrink-window-horizontally)
@@ -214,10 +248,11 @@
 (global-set-key (kbd "C-z i") 'mc/insert-numbers)
 (global-set-key (kbd "C-z q") 'mc/mark-all-in-region-regexp)
 (global-set-key (kbd "C-z r") 'set-rectangular-region-anchor)
+(global-set-key (kbd "C-z s") 'mc/mark-next-like-this-symbol)
+(global-set-key (kbd "C-z <right>") 'set-rectangular-region-anchor)
 ;; evil-numbers
 (global-set-key (kbd "<kp-add>") 'evil-numbers/inc-at-pt)
 (global-set-key (kbd "<kp-subtract>") 'evil-numbers/dec-at-pt)
-
 ;; Org mode
 (setq org-src-preserve-indentation t)
 (setq org-src-fontify-natively t)
@@ -464,6 +499,52 @@ C-u', does not underline whitespace embedded in the line."
          (goto-char (re-search-forward "^"))
         (goto-char original-point))))))
 
+;; from https://superuser.com/questions/67170/how-do-i-complete-file-paths-in-emacs
+(defun my-expand-file-name-at-point ()
+  "Use hippie-expand to expand the filename"
+  (interactive)
+  (let ((hippie-expand-try-functions-list '(try-complete-file-name-partially try-complete-file-name)))
+    (call-interactively 'hippie-expand)))
+
+;; from https://www.emacswiki.org/emacs/HippieExpand
+(defun my-hippie-expand-completions (&optional hippie-expand-function)
+  "Return the full list of possible completions generated by `hippie-expand'.
+The optional argument can be generated with `make-hippie-expand-function'."
+  (let ((this-command 'my-hippie-expand-completions)
+        (last-command last-command)
+        (buffer-modified (buffer-modified-p))
+        (hippie-expand-function (or hippie-expand-function 'hippie-expand)))
+    (flet ((ding)) ; avoid the (ding) when hippie-expand exhausts its options.
+      (while (progn
+               (funcall hippie-expand-function nil)
+               (setq last-command 'my-hippie-expand-completions)
+               (not (equal he-num -1)))))
+    ;; Evaluating the completions modifies the buffer, however we will finish
+    ;; up in the same state that we began.
+    (set-buffer-modified-p buffer-modified)
+    ;; Provide the options in the order in which they are normally generated.
+    (delete he-search-string (reverse he-tried-table))))
+
+(defun my-ido-hippie-expand-with (hippie-expand-function)
+  "Offer ido-based completion using the specified hippie-expand function."
+  (let* ((options (my-hippie-expand-completions hippie-expand-function))
+         (selection (and options
+                         (ido-completing-read "Completions: " options))))
+    (if selection
+        (he-substitute-string selection t)
+      (message "No expansion found"))))
+
+(defun my-ido-hippie-expand ()
+  "Offer ido-based completion for the word at point."
+  (interactive)
+  (my-ido-hippie-expand-with 'hippie-expand))
+
+(defun my-ido-hippie-expand-filename ()
+      "Offer ido-based completion for the filename at point."
+      (interactive)
+      (my-ido-hippie-expand-with
+       (make-hippie-expand-function '(try-complete-file-name))))
+
 ;; customize
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -476,12 +557,13 @@ C-u', does not underline whitespace embedded in the line."
  '(menu-bar-mode nil)
  '(package-selected-packages
    (quote
-    (yasnippet wrap-region thing-cmds s nlinum multiple-cursors move-text magit linum-relative jump-char htmlize frame-cmds expand-region evil-numbers dired+ better-defaults ace-jump-mode)))
+    (cursor-chg yasnippet wrap-region thing-cmds s nlinum multiple-cursors move-text magit linum-relative jump-char htmlize frame-cmds expand-region evil-numbers dired+ better-defaults ace-jump-mode)))
  '(scroll-bar-mode nil)
  '(send-mail-function (quote sendmail-send-it))
  '(tool-bar-mode nil)
  '(vhdl-basic-offset 1)
  '(vhdl-beautify-options (quote (t t t t t)))
+ '(vhdl-end-comment-column 150)
  '(vhdl-upper-case-keywords t)
  '(vhdl-upper-case-types t))
 
