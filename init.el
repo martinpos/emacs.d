@@ -29,6 +29,8 @@
 ;;                                   - hl-line-face darker
 ;;                                   - show-paren-mode
 ;;                                   - windmove on meta key
+;; Jun 30 2017  martin.pos@nxp.com   - windmove on S-M-<arrow>
+;; Jul 03 2017  martin.pos@nxp.com   - install packages
 
 ;;
 ;; packages
@@ -37,6 +39,41 @@
                          ("marmalade" . "http://marmalade-repo.org/packages/")
                          ("melpa" . "http://melpa.org/packages/")))
 (package-initialize)
+
+;; install packages
+;; see https://emacs.stackexchange.com/questions/408/synchronize-packages-between-different-machines
+;; my-package-list compiled from variable package-activated-list
+(setq my-package-list '(
+                        cursor-chg
+                        ace-jump-mode
+                        better-defaults
+                        dired+
+                        evil-numbers
+                        expand-region
+                        frame-cmds
+                        frame-fns
+                        htmlize
+                        jump-char
+                        linum-relative
+                        magit
+                        git-commit
+                        magit-popup
+                        move-text
+                        multiple-cursors
+                        nlinum
+                        s
+                        thing-cmds
+                        hide-comnt
+                        with-editor
+                        async
+                        wrap-region
+                        dash
+                        yasnippet
+                        )
+      )
+(mapc #'package-install my-package-list)
+
+;; init packages
 (require 's)
 (require 'ffap)
 (require 'misc)
@@ -118,7 +155,6 @@
 (transient-mark-mode 0)
 (setq column-number-mode t)
 (display-time-mode 1)
-(windmove-default-keybindings 'meta)
 (put 'downcase-region 'disabled nil)
 (put 'upcase-region 'disabled nil)
 (setq c-basic-offset 1)
@@ -217,7 +253,11 @@
 (global-set-key (kbd "C-M-?") 't)
 (global-set-key (kbd "M-?")  't)
 
-
+;; windmove
+(global-set-key (kbd "S-M-<left>")  'windmove-left)
+(global-set-key (kbd "S-M-<right>") 'windmove-right)
+(global-set-key (kbd "S-M-<up>")    'windmove-up)
+(global-set-key (kbd "S-M-<down>")  'windmove-down)
 ;; resize window - find appropriate method for sizing the window
 ;;(global-set-key (kbd "S-M-C-<left>") 'shrink-window-horizontally)
 ;;(global-set-key (kbd "S-M-C-<right>") 'enlarge-window-horizontally)
@@ -557,7 +597,7 @@ The optional argument can be generated with `make-hippie-expand-function'."
  '(menu-bar-mode nil)
  '(package-selected-packages
    (quote
-    (cursor-chg yasnippet wrap-region thing-cmds s nlinum multiple-cursors move-text magit linum-relative jump-char htmlize frame-cmds expand-region evil-numbers dired+ better-defaults ace-jump-mode)))
+    (dash async with-editor hide-comnt magit-popup git-commit frame-fns cursor-chg yasnippet wrap-region thing-cmds s nlinum multiple-cursors move-text magit linum-relative jump-char htmlize frame-cmds expand-region evil-numbers dired+ better-defaults ace-jump-mode)))
  '(scroll-bar-mode nil)
  '(send-mail-function (quote sendmail-send-it))
  '(tool-bar-mode nil)
