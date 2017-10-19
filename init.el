@@ -31,6 +31,10 @@
 ;;                                   - windmove on meta key
 ;; Jun 30 2017  martin.pos@nxp.com   - windmove on S-M-<arrow>
 ;; Jul 03 2017  martin.pos@nxp.com   - install packages
+;; Jul 04 2017  martin.pos@nxp.com   - Buffer List column width
+;; Sep 20 2017  martin.pos@nxp.com   - indent-tabs-mode nil
+;; Oct 18 2017  martin.pos@nxp.com   - VHDL (removed from custom-set-variables)
+;;                                   - vhdl-end-comment-column
 
 ;;
 ;; packages
@@ -147,6 +151,17 @@
   )
 
 ;;
+;; VHDL
+;;
+(setq 
+ vhdl-basic-offset 1
+ vhdl-beautify-options (quote (t t t t t))
+ vhdl-upper-case-keywords t
+ vhdl-upper-case-types t
+ vhdl-end-comment-column 130
+)
+
+;;
 ;; generic
 ;;
 (delete-selection-mode 1)
@@ -190,7 +205,11 @@
       ido-use-virtual-buffers t)
 (toggle-cursor-type-when-idle 1)
 (change-cursor-mode 1)
-(show-paren-mode)
+(show-paren-mode 1)
+(setq Buffer-menu-name-width 40)
+(setq indent-tabs-mode nil)
+(setq-default tab-width 1)
+(setq tcl-indent-level 1)
 
 ;;(setq hippie-expand-try-functions-list '(try-expand-dabbrev
 ;;                                         try-expand-dabbrev-all-buffers
@@ -600,12 +619,8 @@ The optional argument can be generated with `make-hippie-expand-function'."
     (dash async with-editor hide-comnt magit-popup git-commit frame-fns cursor-chg yasnippet wrap-region thing-cmds s nlinum multiple-cursors move-text magit linum-relative jump-char htmlize frame-cmds expand-region evil-numbers dired+ better-defaults ace-jump-mode)))
  '(scroll-bar-mode nil)
  '(send-mail-function (quote sendmail-send-it))
- '(tool-bar-mode nil)
- '(vhdl-basic-offset 1)
- '(vhdl-beautify-options (quote (t t t t t)))
- '(vhdl-end-comment-column 150)
- '(vhdl-upper-case-keywords t)
- '(vhdl-upper-case-types t))
+ '(Tool-bar-mode nil)
+ )
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
