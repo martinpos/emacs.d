@@ -47,11 +47,9 @@
 ;; install packages
 ;; see https://emacs.stackexchange.com/questions/408/synchronize-packages-between-different-machines
 ;; my-package-list compiled from variable package-activated-list
-(setq my-package-list '(
-                        cursor-chg
-                        ace-jump-mode
+(setq my-package-list '(ace-jump-mode
                         better-defaults
-                        dired+
+                        cursor-chg dired+
                         evil-numbers
                         expand-region
                         frame-cmds
@@ -72,8 +70,7 @@
                         async
                         wrap-region
                         dash
-                        yasnippet
-                        )
+                        yasnippet)
       )
 (mapc #'package-install my-package-list)
 
@@ -193,8 +190,7 @@
 (setq recentf-max-menu-items 200
       recentf-max-menu-items 50)
 (setq-default history-length 5000)
-(setq ido-mode t
-      ido-create-new-buffer (quote never)
+(setq ido-create-new-buffer (quote never)
       ido-enable-flex-matching t
       ido-enable-last-directory-history nil
       ido-enable-regexp nil
@@ -203,13 +199,15 @@
       ido-use-filename-at-point (quote guess)
       ido-use-url-at-point t
       ido-use-virtual-buffers t)
+(ido-mode t)
 (toggle-cursor-type-when-idle 1)
 (change-cursor-mode 1)
 (show-paren-mode 1)
 (setq Buffer-menu-name-width 40)
-(setq indent-tabs-mode nil)
+(setq-default indent-tabs-mode nil)
 (setq-default tab-width 1)
 (setq tcl-indent-level 1)
+(tool-bar-mode -1)
 
 ;;(setq hippie-expand-try-functions-list '(try-expand-dabbrev
 ;;                                         try-expand-dabbrev-all-buffers
@@ -610,6 +608,7 @@ The optional argument can be generated with `make-hippie-expand-function'."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(Tool-bar-mode nil)
  '(custom-safe-themes
    (quote
     ("4527ad80568d218b57e06ff1cab2e5391ab17e4c3252e74a3ea9d6db2d961db5" "5422b05b20c27caf9fe7a511baa8f3bcbaa3ea823cf54e7105fe759923047a26" default)))
@@ -619,8 +618,13 @@ The optional argument can be generated with `make-hippie-expand-function'."
     (dash async with-editor hide-comnt magit-popup git-commit frame-fns cursor-chg yasnippet wrap-region thing-cmds s nlinum multiple-cursors move-text magit linum-relative jump-char htmlize frame-cmds expand-region evil-numbers dired+ better-defaults ace-jump-mode)))
  '(scroll-bar-mode nil)
  '(send-mail-function (quote sendmail-send-it))
- '(Tool-bar-mode nil)
- )
+ '(verilog-auto-lineup (quote ignore))
+ '(verilog-case-indent 1)
+ '(verilog-cexp-indent 1)
+ '(verilog-indent-level 1)
+ '(verilog-indent-level-declaration 1)
+ '(verilog-indent-level-module 1)
+ '(verilog-indent-lists nil))
 
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
