@@ -49,7 +49,8 @@
 ;; my-package-list compiled from variable package-activated-list
 (setq my-package-list '(ace-jump-mode
                         better-defaults
-                        cursor-chg dired+
+                        cursor-chg
+                        dired+
                         evil-numbers
                         expand-region
                         frame-cmds
