@@ -35,6 +35,10 @@
 ;; Sep 20 2017  martin.pos@nxp.com   - indent-tabs-mode nil
 ;; Oct 18 2017  martin.pos@nxp.com   - VHDL (removed from custom-set-variables)
 ;;                                   - vhdl-end-comment-column
+;; Jun 22 2018  martin.pos@nxp.com   - advanced isearch
+;;                                   - windresize
+;; Jun 27 2018  martin.pos@nxp.com   - my-ffap (also open URL at point)
+;; 
 
 ;;
 ;; packages
@@ -209,6 +213,7 @@
 (setq-default tab-width 1)
 (setq tcl-indent-level 1)
 (tool-bar-mode -1)
+(diredp-toggle-find-file-reuse-dir 1)
 
 ;;(setq hippie-expand-try-functions-list '(try-expand-dabbrev
 ;;                                         try-expand-dabbrev-all-buffers
@@ -235,7 +240,7 @@
 ;;
 ;; spelling - May 19 2016  martin.pos@nxp.com
 ;;
-;; see http://stackoverflow.com/questions/15891808/emacs-how-to-enable-automatic-spell-check-by-default
+;; see https://stackoverflow.com/questions/15891808/emacs-how-to-enable-automatic-spell-check-by-default
 ;;
 (add-hook 'text-mode-hook 'flyspell-mode)
 (add-hook 'prog-mode-hook 'flyspell-prog-mode)
@@ -252,7 +257,7 @@
 ;; key bindings
 ;;
 (global-set-key (kbd "C-x C-r") 'recentf-open-files)
-(global-set-key (kbd "C-x y") 'visit-file-at-point)
+(global-set-key (kbd "C-x y") 'my-ffap)
 (global-set-key (kbd "C-=") 'er/expand-region)
 (global-set-key (kbd "C-c n") 'cleanup-buffer)
 (global-set-key [home] 'smart-beginning-of-line)
@@ -266,21 +271,25 @@
 (global-set-key (kbd "M-z") 'zap-up-to-char)
 (global-set-key (kbd "C-?") 'my-expand-file-name-at-point)
 (global-set-key (kbd "<tab>") 'hippie-expand)
+(global-set-key (kbd "<backtab>") (lambda () (interactive) (hippie-expand 0)))
+(global-set-key (kbd "<C-mouse-1>") 'browse-url-at-point)
+(global-unset-key [C-down-mouse-1])
+(global-set-key (kbd "C-x g") 'magit-status)
 
 ;; to be done
 (global-set-key (kbd "C-M-?") 't)
 (global-set-key (kbd "M-?")  't)
 
 ;; windmove
-(global-set-key (kbd "S-M-<left>")  'windmove-left)
-(global-set-key (kbd "S-M-<right>") 'windmove-right)
-(global-set-key (kbd "S-M-<up>")    'windmove-up)
-(global-set-key (kbd "S-M-<down>")  'windmove-down)
-;; resize window - find appropriate method for sizing the window
-;;(global-set-key (kbd "S-M-C-<left>") 'shrink-window-horizontally)
-;;(global-set-key (kbd "S-M-C-<right>") 'enlarge-window-horizontally)
-;;(global-set-key (kbd "S-M-C-<down>") 'shrink-window)
-;;(global-set-key (kbd "S-M-C-<up>") 'enlarge-window)
+(global-set-key (kbd "C-x <left>")  'windmove-left)
+(global-set-key (kbd "C-x <right>") 'windmove-right)
+(global-set-key (kbd "C-x <up>")    'windmove-up)
+(global-set-key (kbd "C-x <down>")  'windmove-down)
+;; windresize
+(global-set-key (kbd "C-x S-<left>")  (lambda () (interactive) (windresize-left) (windresize)))
+(global-set-key (kbd "C-x S-<right>") (lambda () (interactive) (windresize-right) (windresize)))
+(global-set-key (kbd "C-x S-<up>")    (lambda () (interactive) (windresize-up) (windresize)))
+(global-set-key (kbd "C-x S-<down>")    (lambda () (interactive) (windresize-down) (windresize)))
 ;; C-mousewheel scales font size
 (global-set-key [C-mouse-4] 'text-scale-increase)
 (global-set-key [C-mouse-5] 'text-scale-decrease)
@@ -290,7 +299,7 @@
 (global-set-key (kbd "M-j") (lambda () (interactive) (join-line -1)))
 (global-set-key (kbd "C-c C-d") 'duplicate-line)
 ;; jump
-(global-set-key (kbd "C-+") 'ace-jump-mode)
+(global-set-key (kbd "C-x j") 'ace-jump-mode)
 (global-set-key (kbd "M-m") 'jump-char-forward)
 (global-set-key (kbd "M-M") 'jump-char-backward)
 (global-set-key (kbd "s-m") 'jump-char-backward)
@@ -298,6 +307,7 @@
 (global-unset-key (kbd "C-z"))
 (global-set-key (kbd "C-z a") 'mc/mark-all-like-this)
 (global-set-key (kbd "C-z A") 'mc/mark-all-in-region)
+(global-set-key (kbd "C-z e") 'mc/edit-lines)
 (global-set-key (kbd "C-z w") 'mc/mark-all-words-like-this)
 (global-set-key (kbd "C-z n") 'mc/mark-next-like-this)
 (global-set-key (kbd "C-z N") 'mc/unmark-next-like-this)
@@ -308,6 +318,22 @@
 (global-set-key (kbd "C-z r") 'set-rectangular-region-anchor)
 (global-set-key (kbd "C-z s") 'mc/mark-next-like-this-symbol)
 (global-set-key (kbd "C-z <right>") 'set-rectangular-region-anchor)
+;; advanced isearch
+(global-set-key (kbd "C-S-s") 'isearch-forward-symbol-at-point)
+(global-set-key (kbd "C-S-r") (lambda () (interactive) (isearch-forward-symbol-at-point) (isearch-repeat-backward)))
+(progn
+  ;; set arrow keys in isearch. left/right is backward/forward, up/down is history. press Return to exit
+  ;; from: http://ergoemacs.org/emacs/emacs_isearch_by_arrow_keys.html
+  (define-key isearch-mode-map (kbd "<up>") 'isearch-ring-retreat )
+  (define-key isearch-mode-map (kbd "<down>") 'isearch-ring-advance )
+
+  (define-key isearch-mode-map (kbd "<left>") 'isearch-repeat-backward)
+  (define-key isearch-mode-map (kbd "<right>") 'isearch-repeat-forward)
+
+  (define-key minibuffer-local-isearch-map (kbd "<left>") 'isearch-reverse-exit-minibuffer)
+  (define-key minibuffer-local-isearch-map (kbd "<right>") 'isearch-forward-exit-minibuffer)
+  )
+
 ;; evil-numbers
 (global-set-key (kbd "<kp-add>") 'evil-numbers/inc-at-pt)
 (global-set-key (kbd "<kp-subtract>") 'evil-numbers/dec-at-pt)
@@ -380,6 +406,18 @@
   "visit file under point, without prompt"
   (interactive)
   (find-file(ffap-guesser)))
+
+;;
+;; Jun 27 2018  martin.pos@nxp.com - ffap visits files and urls (!), prompt is annoying though
+;;
+;; from https://www.reddit.com/r/emacs/comments/676r5b/how_to_stop_findfileatprompting_when_there_is_a
+(defun my-ffap (&optional filename)
+  (interactive)
+  (let* ((name (or filename (ffap-string-at-point 'file)))
+         (fname (expand-file-name name)))
+    (if (and name fname (file-exists-p fname))
+        (find-file fname)
+      (find-file-at-point filename))))
 
 ;; from https://github.com/magnars/.emacs.d/blob/master/defuns/buffer-defuns.el
 (defun cleanup-buffer ()
@@ -603,6 +641,53 @@ The optional argument can be generated with `make-hippie-expand-function'."
       (my-ido-hippie-expand-with
        (make-hippie-expand-function '(try-complete-file-name))))
 
+;; based on
+;;  https://stackoverflow.com/questions/202803/searching-for-marked-selected-text-in-emacs
+;;  https://stackoverflow.com/questions/10594208/how-do-i-get-the-region-selection-programmatically-in-emacs-lisp/10595146
+
+;; (defun isearch-region (begin end)
+;;   "Use region as the isearch text."
+;;   (if (use_region-p)
+;;     (let ((region (funcall region-extract-function nil)))
+;;       (deactivate-mark)
+;;       (isearch-push-state)
+;;       (isearch-yank-string region))))
+;; (remove-hook 'isearch-mode-hook #'isearch-region)
+
+;; (defun get-search-term ()
+;;   (interactive)
+;;   (let (
+;;         (selection (buffer-substring-no-properties (region-beginning) (region-end))))
+;;     (if (= (length selection) 0)
+;;         (message "empty string")
+;;       (message selection))))
+;; 
+;; (defun get-search-term (begin end)
+;;   "message region or \"empty string\" if none highlighted"
+;;   (interactive (if (use-region-p)
+;;                    (list (region-beginning) (region-end))
+;;                  (list nil nil)))
+;;   (if (and begin end)
+;;       (let ((selection (buffer-substring-no-properties begin end))))
+;;       (message "empty string xx")
+;;     )
+;;          (message "empty string xx")
+;;       (message selection))))
+;; 
+;; (defun isearch-selection (start end)
+;;   "use selection as search string"
+;;   (interactive (if (use-region-p)
+;;                    (list (region-beginning) (region-end))
+;;                  (list nil nil)))
+;;   (let (selection (buffer-substring start end) "\n"))
+;;   (setq command (read-shell-command "Shell command: "))
+;;   (goto-char end)
+;;   (shell-command-on-region start end command t t)
+;;   (exchange-point-and-mark)
+;;   )
+
+
+
 ;; customize
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -616,7 +701,7 @@ The optional argument can be generated with `make-hippie-expand-function'."
  '(menu-bar-mode nil)
  '(package-selected-packages
    (quote
-    (dash async with-editor hide-comnt magit-popup git-commit frame-fns cursor-chg yasnippet wrap-region thing-cmds s nlinum multiple-cursors move-text magit linum-relative jump-char htmlize frame-cmds expand-region evil-numbers dired+ better-defaults ace-jump-mode)))
+    (windresize direx dash async with-editor hide-comnt magit-popup git-commit frame-fns cursor-chg yasnippet wrap-region thing-cmds s nlinum multiple-cursors move-text magit linum-relative jump-char htmlize frame-cmds expand-region evil-numbers dired+ better-defaults ace-jump-mode)))
  '(scroll-bar-mode nil)
  '(send-mail-function (quote sendmail-send-it))
  '(verilog-auto-lineup (quote ignore))
@@ -633,3 +718,4 @@ The optional argument can be generated with `make-hippie-expand-function'."
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+(put 'dired-find-alternate-file 'disabled nil)
