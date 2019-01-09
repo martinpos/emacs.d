@@ -38,6 +38,7 @@
 ;; Jun 22 2018  martin.pos@nxp.com   - advanced isearch
 ;;                                   - windresize
 ;; Jun 27 2018  martin.pos@nxp.com   - my-ffap (also open URL at point)
+;; Jul 04 2018  martin.pos@nxp.com   - todo-run
 ;; 
 
 ;;
@@ -75,7 +76,8 @@
                         async
                         wrap-region
                         dash
-                        yasnippet)
+                        yasnippet
+                        windresize)
       )
 (mapc #'package-install my-package-list)
 
@@ -84,6 +86,7 @@
 (require 'ffap)
 (require 'misc)
 (require 'cursor-chg)
+(require 'windresize)
 
 ;;
 ;; .emacs.d setup
@@ -175,6 +178,8 @@
 (put 'downcase-region 'disabled nil)
 (put 'upcase-region 'disabled nil)
 (setq c-basic-offset 1)
+(setq sh-basic-offset 1
+      sh-indentation 1)
 (setq cperl-indent-level 1
       cperl-close-paren-offset -1
       cperl-continued-statement-offset 1
@@ -324,15 +329,18 @@
 (progn
   ;; set arrow keys in isearch. left/right is backward/forward, up/down is history. press Return to exit
   ;; from: http://ergoemacs.org/emacs/emacs_isearch_by_arrow_keys.html
-  (define-key isearch-mode-map (kbd "<up>") 'isearch-ring-retreat )
-  (define-key isearch-mode-map (kbd "<down>") 'isearch-ring-advance )
-
-  (define-key isearch-mode-map (kbd "<left>") 'isearch-repeat-backward)
-  (define-key isearch-mode-map (kbd "<right>") 'isearch-repeat-forward)
-
+  (define-key isearch-mode-map (kbd "C-<up>") 'isearch-ring-retreat )
+  (define-key isearch-mode-map (kbd "C-<down>") 'isearch-ring-advance )
+  (define-key isearch-mode-map (kbd "C-<left>") 'isearch-repeat-backward)
+  (define-key isearch-mode-map (kbd "C-<right>") 'isearch-repeat-forward)
   (define-key minibuffer-local-isearch-map (kbd "<left>") 'isearch-reverse-exit-minibuffer)
   (define-key minibuffer-local-isearch-map (kbd "<right>") 'isearch-forward-exit-minibuffer)
   )
+;; todo
+(global-set-key (kbd "<f5>") 'todo-run)
+(global-set-key (kbd "S-<f5>") 'todo-jump)
+(global-set-key (kbd "C-<f5>") 'todo-ul)
+
 
 ;; evil-numbers
 (global-set-key (kbd "<kp-add>") 'evil-numbers/inc-at-pt)
@@ -641,6 +649,56 @@ The optional argument can be generated with `make-hippie-expand-function'."
       (my-ido-hippie-expand-with
        (make-hippie-expand-function '(try-complete-file-name))))
 
+;;
+;; TODO
+;;
+;; Jul 06 2018  martin.pos@nxp.com  - creation
+;;
+(defun todo-run ()
+  "run todo script to generate web-page"
+  (interactive)
+  (message(shell-command-to-string "
+ p=BAP3_DIE2; \
+ d=$HOME/public_html/TODO/$p; \
+ mkdir -p $d; \
+ fi=/home/nlv07927/projects/BAP3_DIE2/data/aar_tdf8533_manager/aar_tdf8533_manager/DOCUMENTS/aar_tdf8536_manager_logbook_mpp.txt; \
+ fo=$HOME/public_html/TODO/$p/index.html; \
+ todo=$HOME/projects/BAP3_DIE2/data/aar_tdf8533_manager/aar_tdf8533_manager/bin/todo; \
+ msg=$((time $todo -s -l ~/public_html/TODO/$p -u Uncategorized $fi > $fo) 2>&1 | perl -ne 'if (s/^real\\s+/run-todo, time: /) {print}'); \
+ chmod -R o+rX $d; \
+ echo -n \"$msg\"
+")))
+
+(defun todo-jump ()
+  "jmup to latest TODO section"
+  (interactive)
+  (deactivate-mark)
+  (goto-char (point-max))
+  (re-search-backward "^TODO:" nil nil))
+
+(defun todo-ul (&optional heading)
+  "TODO heading"
+  (interactive "P")
+  (if (use-region-p)
+      (setq
+       start (region-beginning)
+       end (region-end)
+       )
+    (setq
+     start (point-at-bol)
+     end (point-at-eol)
+     )
+    )
+  (setq input (concat (buffer-substring start end) "\n"))
+  (if heading
+      (setq command (concat "UL -h" (number-to-string heading)))
+      (setq command "UL")
+    )
+  (goto-char end)
+  (shell-command-on-region start end command t t)
+  (exchange-point-and-mark)
+  )
+
 ;; based on
 ;;  https://stackoverflow.com/questions/202803/searching-for-marked-selected-text-in-emacs
 ;;  https://stackoverflow.com/questions/10594208/how-do-i-get-the-region-selection-programmatically-in-emacs-lisp/10595146
@@ -695,13 +753,14 @@ The optional argument can be generated with `make-hippie-expand-function'."
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(Tool-bar-mode nil)
+ '(custom-enabled-themes (quote (leuven)))
  '(custom-safe-themes
    (quote
-    ("4527ad80568d218b57e06ff1cab2e5391ab17e4c3252e74a3ea9d6db2d961db5" "5422b05b20c27caf9fe7a511baa8f3bcbaa3ea823cf54e7105fe759923047a26" default)))
+    ("eecdab5c7ce8f278a10274a173449d739226ffb3dcffdf27292be2f0a05df3c2" "4527ad80568d218b57e06ff1cab2e5391ab17e4c3252e74a3ea9d6db2d961db5" "5422b05b20c27caf9fe7a511baa8f3bcbaa3ea823cf54e7105fe759923047a26" default)))
  '(menu-bar-mode nil)
  '(package-selected-packages
    (quote
-    (windresize direx dash async with-editor hide-comnt magit-popup git-commit frame-fns cursor-chg yasnippet wrap-region thing-cmds s nlinum multiple-cursors move-text magit linum-relative jump-char htmlize frame-cmds expand-region evil-numbers dired+ better-defaults ace-jump-mode)))
+    (dash async with-editor hide-comnt magit-popup git-commit frame-fns yasnippet wrap-region windresize thing-cmds s nlinum multiple-cursors move-text magit linum-relative jump-char htmlize frame-cmds expand-region evil-numbers direx dired+ cursor-chg better-defaults ace-jump-mode)))
  '(scroll-bar-mode nil)
  '(send-mail-function (quote sendmail-send-it))
  '(verilog-auto-lineup (quote ignore))
