@@ -39,7 +39,13 @@
 ;;                                   - windresize
 ;; Jun 27 2018  martin.pos@nxp.com   - my-ffap (also open URL at point)
 ;; Jul 04 2018  martin.pos@nxp.com   - todo-run
-;; 
+;; May 28 2019  martin.pos@nxp.com   - octave-mode (matlab)
+;; Jun 06 2019  martin.pos@nxp.com   - desktop-save-mode
+;; Oct 16 2019  martin.pos@nxp.com   - todo: f5 -> f6
+;;                                   - refresh: f5
+;; Nov 14 2019  martin.pos@nxp.com   - whitespace-cleanup before-save
+;; Feb 18 2020  martin.pos@nxp.com   - desktop-path, local directory
+;;
 
 ;;
 ;; packages
@@ -88,6 +94,10 @@
 (require 'cursor-chg)
 (require 'windresize)
 
+;; desktop
+(desktop-save-mode)
+(setq desktop-path '("."))
+
 ;;
 ;; .emacs.d setup
 ;;
@@ -131,7 +141,26 @@
         (mark " " (name 16 -1) " " filename)))
 (add-to-list 'default-frame-alist '(background-color . "gray95"))
 (add-to-list 'default-frame-alist '(foreground-color . "black"))
+
+;;
+;; mode
+;;
 (add-to-list 'auto-mode-alist '("\\.f\\'" . text-mode))
+(add-to-list 'auto-mode-alist '("\\.m\\'" . octave-mode))
+(setq octave-mode-hook
+      (lambda () (progn (setq octave-comment-char ?%)
+                        (setq comment-start "%")
+                        (setq indent-tabs-mode nil)
+                        (setq comment-add 0)
+                        (setq tab-width 1)
+                        (setq tab-stop-list (number-sequence 2 200 2))
+                        (setq octave-block-offset 2)
+                        (setq abbrev-mode 1)
+                        (setq auto-fill-mode 1)
+                        (if (eq window-system 'x)
+                            (font-lock-mode 1))
+                        (setq octave-block-offset 1)
+                        (setq octave-continuation-offset 1))))
 
 ;;
 ;; whitespace-mode
@@ -142,8 +171,7 @@
   (global-whitespace-mode -1)
   (setq whitespace-line-column 130)
   ;; NB no space-mark, tab-mark or newline-mark in whitespace-style
-
-  (setq whitespace-style '(face spaces tabs empty))
+  (setq whitespace-style '(face spaces tabs empty trailing))
   (setq space-face (make-face 'space-face))
   (set-face-background 'space-face "gray90")
   (set-face-foreground 'space-face "white")
@@ -154,11 +182,12 @@
   (whitespace-mode 1)
   (global-whitespace-mode 1)
   )
+(add-hook 'before-save-hook 'whitespace-cleanup)
 
 ;;
 ;; VHDL
 ;;
-(setq 
+(setq
  vhdl-basic-offset 1
  vhdl-beautify-options (quote (t t t t t))
  vhdl-upper-case-keywords t
@@ -337,10 +366,27 @@
   (define-key minibuffer-local-isearch-map (kbd "<right>") 'isearch-forward-exit-minibuffer)
   )
 ;; todo
-(global-set-key (kbd "<f5>") 'todo-run)
-(global-set-key (kbd "S-<f5>") 'todo-jump)
-(global-set-key (kbd "C-<f5>") 'todo-ul)
-
+(global-set-key (kbd "<f6>") 'todo-run)
+(global-set-key (kbd "S-<f6>") 'todo-jump)
+(global-set-key (kbd "C-<f6>") 'todo-ul)
+;; refresh, source: https://www.emacswiki.org/emacs/RevertBuffer, edited (messages)
+(global-set-key
+  (kbd "<f5>")
+  (lambda (&optional force-reverting)
+    "Interactive call to revert-buffer. Ignoring the auto-save
+ file and not requesting for confirmation. When the current buffer
+ is modified, the command refuses to revert it, unless you specify
+ the optional argument: force-reverting to true."
+    (interactive "P")
+    (if (not (buffer-modified-p))
+        (progn
+        (message "Refresh buffer: %s" buffer-file-name)
+        (revert-buffer :ignore-auto :noconfirm))
+      (if (not force-reverting)
+          (message "Not refreshed, modified buffer: %s" buffer-file-name)
+        (progn
+        (message "Force refresh modifed buffer: %s" buffer-file-name)
+        (revert-buffer :ignore-auto :noconfirm))))))
 
 ;; evil-numbers
 (global-set-key (kbd "<kp-add>") 'evil-numbers/inc-at-pt)
@@ -373,22 +419,17 @@
 
 ;;
 ;; Nov 22 2015  martin.pos@nxp.com - filter-by-shell-command
+;; Feb 25 2019  martin.pos@nxp.com - improved region handling
 ;;
 ;; inspired by: http://www.emacswiki.org/emacs/ExecuteExternalCommand
 ;;
 (defun filter-by-shell-command ()
   "filter the region or current line as shell command"
   (interactive)
-  (if (use-region-p)
-      (setq
+  (setq
        start (region-beginning)
        end (region-end)
-       )
-    (setq
-     start (point-at-bol)
-     end (point-at-eol)
-     )
-    )
+  )
   (setq input (concat (buffer-substring start end) "\n"))
   (setq command (read-shell-command "Shell command: "))
   (goto-char end)
@@ -499,8 +540,8 @@ If point was already at that position, move point to beginning of line."
          (filename (ido-read-buffer "Find Recent File: "))
          (result-list (delq nil (mapcar (lambda (x) (if (string= (car x) filename) (cdr x))) file-assoc-list)))
          (result-length (length result-list)))
-    (find-file 
-     (cond 
+    (find-file
+     (cond
       ((= result-length 0) filename)
       ((= result-length 1) (car result-list))
       ( t
@@ -657,17 +698,17 @@ The optional argument can be generated with `make-hippie-expand-function'."
 (defun todo-run ()
   "run todo script to generate web-page"
   (interactive)
-  (message(shell-command-to-string "
- p=BAP3_DIE2; \
+  (message(shell-command-to-string (format "
+ p=$(prj -pn); \
  d=$HOME/public_html/TODO/$p; \
  mkdir -p $d; \
- fi=/home/nlv07927/projects/BAP3_DIE2/data/aar_tdf8533_manager/aar_tdf8533_manager/DOCUMENTS/aar_tdf8536_manager_logbook_mpp.txt; \
+ fi=%s; \
  fo=$HOME/public_html/TODO/$p/index.html; \
  todo=$HOME/projects/BAP3_DIE2/data/aar_tdf8533_manager/aar_tdf8533_manager/bin/todo; \
  msg=$((time $todo -s -l ~/public_html/TODO/$p -u Uncategorized $fi > $fo) 2>&1 | perl -ne 'if (s/^real\\s+/run-todo, time: /) {print}'); \
  chmod -R o+rX $d; \
  echo -n \"$msg\"
-")))
+" (buffer-file-name)))))
 
 (defun todo-jump ()
   "jmup to latest TODO section"
@@ -719,7 +760,7 @@ The optional argument can be generated with `make-hippie-expand-function'."
 ;;     (if (= (length selection) 0)
 ;;         (message "empty string")
 ;;       (message selection))))
-;; 
+;;
 ;; (defun get-search-term (begin end)
 ;;   "message region or \"empty string\" if none highlighted"
 ;;   (interactive (if (use-region-p)
@@ -731,7 +772,7 @@ The optional argument can be generated with `make-hippie-expand-function'."
 ;;     )
 ;;          (message "empty string xx")
 ;;       (message selection))))
-;; 
+;;
 ;; (defun isearch-selection (start end)
 ;;   "use selection as search string"
 ;;   (interactive (if (use-region-p)
@@ -743,8 +784,6 @@ The optional argument can be generated with `make-hippie-expand-function'."
 ;;   (shell-command-on-region start end command t t)
 ;;   (exchange-point-and-mark)
 ;;   )
-
-
 
 ;; customize
 (custom-set-variables
@@ -760,7 +799,7 @@ The optional argument can be generated with `make-hippie-expand-function'."
  '(menu-bar-mode nil)
  '(package-selected-packages
    (quote
-    (dash async with-editor hide-comnt magit-popup git-commit frame-fns yasnippet wrap-region windresize thing-cmds s nlinum multiple-cursors move-text magit linum-relative jump-char htmlize frame-cmds expand-region evil-numbers direx dired+ cursor-chg better-defaults ace-jump-mode)))
+    (auto-complete dash async with-editor hide-comnt magit-popup git-commit frame-fns yasnippet wrap-region windresize thing-cmds s nlinum multiple-cursors move-text magit linum-relative jump-char htmlize frame-cmds expand-region evil-numbers direx dired+ cursor-chg better-defaults ace-jump-mode)))
  '(scroll-bar-mode nil)
  '(send-mail-function (quote sendmail-send-it))
  '(verilog-auto-lineup (quote ignore))
