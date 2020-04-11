@@ -17,7 +17,7 @@
 ;; Feb 10 2016  martin.pos@nxp.com   - fix: ffap initialize
 ;; May 19 2016  martin.pos@nxp.com   - spelling, flyspell
 ;; Jun 09 2016  martin.pos@nxp.com   - ido settings, virtual buffers
-;;                                   - hippie-exand settings
+;;                                   - hippie-expand settings
 ;; Jul 14 2016  martin.pos@nxp.com   - default keybindings for query-replace(-regexp)?
 ;; Nov 22 2016  martin.pos@nxp.com   - duplicate-line
 ;; Feb 27 2017  martin.pos@nxp.com   - evil-numbers
@@ -45,6 +45,10 @@
 ;;                                   - refresh: f5
 ;; Nov 14 2019  martin.pos@nxp.com   - whitespace-cleanup before-save
 ;; Feb 18 2020  martin.pos@nxp.com   - desktop-path, local directory
+;; Feb 20 2020  martin.pos@nxp.com   - title (frame-title-format)
+;; Feb 24 2020  martin.pos@nxp.com   - insert-file-name: rewrite for personal usage
+;; Mar 20 2020  martin.pos@nxp.com   - browse-kill-ring
+;; Apr 10 2020  martin.pos@nxp.com   - todo-jump-title
 ;;
 
 ;;
@@ -93,6 +97,7 @@
 (require 'misc)
 (require 'cursor-chg)
 (require 'windresize)
+(require 'browse-kill-ring)
 
 ;; desktop
 (desktop-save-mode)
@@ -125,6 +130,13 @@
   (process-send-string name (format "CONNECT %s:%d HTTP/1.1\n\n" host service))
   tmp-process))
 (setq erc-server-connect-function 'open-http-proxy-stream)
+
+;;
+;; title
+;;
+;; NB: (substring str 0 -1)  removes trailing \n
+(setq prj-name (substring (shell-command-to-string (format "prj -pn")) 0 -1))
+(setq frame-title-format '("" prj-name " - %b"))
 
 ;;
 ;; appearance
@@ -309,7 +321,8 @@
 (global-set-key (kbd "<C-mouse-1>") 'browse-url-at-point)
 (global-unset-key [C-down-mouse-1])
 (global-set-key (kbd "C-x g") 'magit-status)
-
+;; browse-kill-ring: M-y
+(browse-kill-ring-default-keybindings)
 ;; to be done
 (global-set-key (kbd "C-M-?") 't)
 (global-set-key (kbd "M-?")  't)
@@ -332,6 +345,7 @@
 ;; joins the following line onto this one (whattheemacsd.com)
 (global-set-key (kbd "M-j") (lambda () (interactive) (join-line -1)))
 (global-set-key (kbd "C-c C-d") 'duplicate-line)
+(global-set-key (kbd "C-c d") 'duplicate-line)
 ;; jump
 (global-set-key (kbd "C-x j") 'ace-jump-mode)
 (global-set-key (kbd "M-m") 'jump-char-forward)
@@ -369,6 +383,7 @@
 (global-set-key (kbd "<f6>") 'todo-run)
 (global-set-key (kbd "S-<f6>") 'todo-jump)
 (global-set-key (kbd "C-<f6>") 'todo-ul)
+(global-set-key (kbd "M-<f6>") 'todo-jump-title)
 ;; refresh, source: https://www.emacswiki.org/emacs/RevertBuffer, edited (messages)
 (global-set-key
   (kbd "<f5>")
@@ -458,12 +473,14 @@
 
 ;;
 ;; Jun 27 2018  martin.pos@nxp.com - ffap visits files and urls (!), prompt is annoying though
+;; Mar 13 2020  martin.pos@nxp.com - substitute-in-file-name, avoids prompt in case of environment variables (e.g. $HOME/.bashrc.user)
 ;;
 ;; from https://www.reddit.com/r/emacs/comments/676r5b/how_to_stop_findfileatprompting_when_there_is_a
 (defun my-ffap (&optional filename)
   (interactive)
   (let* ((name (or filename (ffap-string-at-point 'file)))
-         (fname (expand-file-name name)))
+         (fname (expand-file-name name))
+         (fname (substitute-in-file-name fname)))
     (if (and name fname (file-exists-p fname))
         (find-file fname)
       (find-file-at-point filename))))
@@ -505,31 +522,24 @@ If point was already at that position, move point to beginning of line."
       (message "Copied buffer file name '%s' to the clipboard." filename))))
 
 ;; from http://stackoverflow.com/questions/16764502/insert-filename-using-ido
-(defun insert-file-name (filename &optional args)
-  "Insert name of file FILENAME into buffer after point.
-
-  Prefixed with \\[universal-argument], expand the file name to
-  its fully canocalized path.  See `expand-file-name'.
-
-  Prefixed with \\[negative-argument], use relative path to file
-  name from current directory, `default-directory'.  See
-  `file-relative-name'.
-
-  The default with no prefix is to insert the file name exactly as
-  it appears in the minibuffer prompt."
-  ;; Based on insert-file in Emacs -- ashawley 20080926
-  (interactive `(,(ido-read-file-name "File Name: ")
-                 ,current-prefix-arg))
+;; Based on insert-file in Emacs -- ashawley 20080926
+(defun insert-file-name (&optional args)
+  "Insert buffer filename after point.
+  Prefix \\[universal-argument], insert full filename.
+  Prefix \\[negative-argument], insert true filename (no symlinks).
+  Default only filename, without path"
+  (interactive "P")
+  (setq filename (buffer-file-name))
   (cond ((eq '- args)
-         (insert (expand-file-name filename)))
+         (insert (file-truename filename)))
         ((not (null args))
          (insert filename))
         (t
-         (insert (file-relative-name filename)))))
+         (insert (file-name-nondirectory filename)))))
 
 ;; from https://www.emacswiki.org/emacs/RecentFiles#toc8
 (defun recentf-interactive-complete ()
-  "find a file in the recently open file using ido for completion"
+  "find a file in the recently open files using ido for completion"
   (interactive)
   (let* ((all-files recentf-list)
          (file-assoc-list (mapcar (lambda (x) (cons (file-name-nondirectory x) x)) all-files))
@@ -733,12 +743,23 @@ The optional argument can be generated with `make-hippie-expand-function'."
   (setq input (concat (buffer-substring start end) "\n"))
   (if heading
       (setq command (concat "UL -h" (number-to-string heading)))
-      (setq command "UL")
+    (setq command "UL")
     )
   (goto-char end)
   (shell-command-on-region start end command t t)
   (exchange-point-and-mark)
   )
+
+ (defun todo-jump-title ()
+   "jump to latest todo title"
+   (interactive)
+   (deactivate-mark)
+   (let ((point-cur (point)))
+     (if (and (boundp 'todo-point-title) (boundp 'todo-point-work) (eq point-cur todo-point-title))
+         (goto-char todo-point-work)
+       (progn
+         (setq todo-point-work point-cur)
+         (setq todo-point-title (re-search-backward "^ *title .*\"[^\"]+\" *$" ))))))
 
 ;; based on
 ;;  https://stackoverflow.com/questions/202803/searching-for-marked-selected-text-in-emacs
@@ -799,7 +820,7 @@ The optional argument can be generated with `make-hippie-expand-function'."
  '(menu-bar-mode nil)
  '(package-selected-packages
    (quote
-    (auto-complete dash async with-editor hide-comnt magit-popup git-commit frame-fns yasnippet wrap-region windresize thing-cmds s nlinum multiple-cursors move-text magit linum-relative jump-char htmlize frame-cmds expand-region evil-numbers direx dired+ cursor-chg better-defaults ace-jump-mode)))
+    (browse-kill-ring auto-complete dash async with-editor hide-comnt magit-popup git-commit frame-fns yasnippet wrap-region windresize thing-cmds s nlinum multiple-cursors move-text magit linum-relative jump-char htmlize frame-cmds expand-region evil-numbers direx dired+ cursor-chg better-defaults ace-jump-mode)))
  '(scroll-bar-mode nil)
  '(send-mail-function (quote sendmail-send-it))
  '(verilog-auto-lineup (quote ignore))
