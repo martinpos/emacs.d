@@ -59,48 +59,89 @@
 ;; Oct 01 2020  martin.pos@nxp.com   - help-window-select
 ;; Oct 15 2020  martin.pos@nxp.com   - flyspell-add-word, flyspell-check-next-highlighted-word
 ;;                                   - flyspell key bindings (F8)
+;; Oct 18 2020  martin.pos@nxp.com   - todo-jump-end
+;; Oct 21 2020  martin.pos@nxp.com   - whitespace-mode add colors
+;;                                   - ibuffer instead of list-buffers
+;;                                   - macros
+;; Feb 18 2021  martin.pos@nxp.com   - todo-jump replaces all todo-jump-<>
+;;                                   - ibuffer size-h (human readable)
+;;                                   - my-dired-mode-hook
+;; Mar 10 2021  martin.pos@nxp.com   - isearch-forward-region, isearch-backward-region
+;; Apr 02 2021  martin.pos@nxp.com   - ibuffer filename-env (environment variables)
+;; May 04 2021  martin.pos@nxp.com   - mpp-hilite
+;; May 09 2021  martin.pos@nxp.com   - centaur-tabs
+;; Jul 22 2021  martin.pos@nxp.com   - isearch-forward-region: special todo-search
+;; Aug 31 2021  martin.pos@nxp.com   - load-theme, sml/theme
+;; Sep 14 2021  martin.pos@nxp.com   - cru-header
+;;                                   - mouse-autoselect-window
+;; Dec 15 2021  martin.pos@nxp.com   - mpp-hilite, use region or thing-at-point
+;; Jan 13 2022  martin.pos@nxp.com   - todo-jump last
 ;;
-
-
 
 ;;
 ;; packages
 ;;
+;;                      ("marmalade" . "http://marmalade-repo.org/packages/")
 (setq package-archives '(("gnu" . "http://elpa.gnu.org/packages/")
-                         ("marmalade" . "http://marmalade-repo.org/packages/")
                          ("melpa" . "http://melpa.org/packages/")))
 (package-initialize)
+(setq package-enable-at-startup nil)
 
 ;; install packages
 ;; see https://emacs.stackexchange.com/questions/408/synchronize-packages-between-different-machines
 ;; my-package-list compiled from variable package-activated-list
-(setq my-package-list '(ace-jump-mode
-                        better-defaults
-                        cursor-chg
-                        dired+
-                        evil-numbers
-                        expand-region
-                        frame-cmds
-                        frame-fns
-                        htmlize
-                        jump-char
-                        linum-relative
-                        magit
-                        git-commit
-                        magit-popup
-                        move-text
-                        multiple-cursors
-                        nlinum
-                        s
-                        thing-cmds
-                        hide-comnt
-                        with-editor
-                        async
-                        wrap-region
-                        dash
-                        yasnippet
-                        windresize)
-      )
+(setq my-package-list '(abyss-theme
+ace-jump-mode
+ace-window
+afternoon-theme
+alect-themes
+auto-complete
+avy better-defaults
+browse-kill-ring
+color-theme-sanityinc-tomorrow
+cursor-chg
+cyberpunk-theme
+dired+
+direx
+doom-themes
+dracula-theme
+evil-numbers
+expand-region
+flatui-theme
+frame-cmds
+frame-fns
+gratuitous-dark-theme
+htmlize
+hybrid-reverse-theme
+immaterial-theme
+jump-char
+linum-relative
+magit
+git-commit
+magit-popup
+material-theme
+matlab-mode
+move-text
+multiple-cursors
+nlinum
+popup
+s
+smart-mode-line
+rich-minority
+spacemacs-theme
+thing-cmds
+hide-comnt
+transient
+twilight-bright-theme
+twilight-theme
+windresize
+with-editor
+async
+wrap-region
+dash
+yasnippet
+zenburn-theme))
+
 (mapc #'package-install my-package-list)
 
 ;; init packages
@@ -111,6 +152,8 @@
 (require 'windresize)
 (require 'browse-kill-ring)
 (require 'cl-lib)
+(require 'ace-window)
+;;(require 'centaur-tabs)
 
 ;; desktop
 (desktop-save-mode 1)
@@ -155,22 +198,136 @@
 ;; appearance
 ;;
 ;; Aug 06 2020  martin.pos@nxp.com   - removed colors (avoid theme conflict)
-
 (global-hl-line-mode 1)
 (set-face-attribute 'default nil :height 90)
-(setq ibuffer-formats
-      '((mark modified read-only " "
-              (name 50 50 :left :elide) " "
-              (size 9 -1 :right) " "
-              (mode 16 16 :left :elide) " " filename-and-process)
-        (mark " " (name 16 -1) " " filename)))
+
+;;
+;; centaur-tabs
+;;
+;; May 09 2021  martin.pos@nxp.com   - creation
+;; (centaur-tabs-mode nil)
+;; (global-set-key (kbd "C-<prior>")  'centaur-tabs-backward)
+;; (global-set-key (kbd "C-<next>") 'centaur-tabs-forward)
+
+;;
+;; Feb 18 2021  martin.pos@nxp.com - size-h
+;;                                 - auto-mode
+;; Apr 02 2021  martin.pos@nxp.com - filename-env
+;;
+;; Use human readable Size column instead of original one
+;; https://www.emacswiki.org/emacs/IbufferMode
+(add-hook 'ibuffer-mode-hook (lambda () (ibuffer-auto-mode 1)))
+(setq ibuffer-formats '(
+ (mark
+  (modified)
+  (read-only)
+  " "
+  (name 45 45 :left :elide)
+  " "
+  (size-h 9 -1 :right)
+  " "
+  (mode 18 18 :left :elide)
+  " "
+  (filename-env)
+ )
+ (mark
+  (modified)
+  (read-only)
+  " "
+  (name 45 45 :left :elide)
+  " "
+  (size-h 9 -1 :right)
+  " "
+  (mode 18 18 :left :elide)
+  " "
+  (filename-and-process)
+ )
+ (mark
+  " "
+  (name 45 -1)
+  " "
+  (filename-env)
+ )
+))
+;; ibuffer column size-h
+(define-ibuffer-column size-h
+ (:name "Size" :inline nil)
+ (cond
+  ((> (buffer-size) 1e6) (format "%7.1fM" (/ (buffer-size) 1.0e6)))
+  ((> (buffer-size) 100e3) (format "%7.0fk" (/ (buffer-size) 1.0e3)))
+  ((> (buffer-size) 1e3) (format "%7.1fk" (/ (buffer-size) 1.0e3)))
+  (t (format "%8d" (buffer-size)))
+ )
+)
+;; ibuffer column filename-env
+(define-ibuffer-column filename-env
+ (:name "Filename" :inline nil)
+ (if (buffer-file-name buffer)
+  (progn
+   (setq vars '("WORK" "HOME" "PROJECT_ROOT"))
+   (setq str (buffer-file-name buffer))
+   (cl-loop for var in vars do
+    (setq str (replace-regexp-in-string (regexp-quote (getenv var)) (concat "\$" var) str))
+   )
+   (setq str str)
+  )
+  (or dired-directory "")
+ )
+)
+
+;; Feb 18 2021  martin.pos@nxp.com  - my-dired-mode-hook
+;; Mar 12 2021  martin.pos@nxp.com  - details default enabled
+;;
+(setq diredp-hide-details-initially-flag nil)
+(add-hook 'dired-mode-hook (lambda () (setq truncate-lines t)))
+
+;;
+;; load themes
+;;
+
+;; Feb 15 2021  martin.pos@nxp.com  - creation, custom-theme-load-path
+;; from: https://www.emacswiki.org/emacs/CustomThemes
+;;
+(let ((basedir "~/.emacs.d/themes/"))
+   (dolist (f (directory-files basedir))
+     (if (and (not (or (equal f ".") (equal f "..")))
+              (file-directory-p (concat basedir f)))
+         (add-to-list 'custom-theme-load-path (concat basedir f)))))
+
+;; Aug 31 2021  martin.pos@nxp.com  - disable-all-themes
+;; from: https://www.greghendershott.com/2017/02/emacs-themes.html
+;;
+;; NB doesn't work yet when emacs is started
+(progn
+ (load-theme 'doom-dark+ t)
+)
 
 ;; sml - smart-mode-line
 ;;
 ;; Sep 23 2020  martin.pos@nxp.com  - smart-mode-line
-(sml/setup)
+;; Apr 05 2021  martin.pos@nxp.com  - mode-line-format (experimenting still)
 (setq sml/name-width 70)
 (setq sml/mode-width 30)
+(setq sml/no-confirm-load-theme t)
+(setq sml/theme 'mpp)
+(sml/setup)
+(setq mode-line-format '(
+  "%e"
+  mode-line-front-space
+  mode-line-mule-info
+  mode-line-client
+  mode-line-modified
+  mode-line-remote
+  mode-line-frame-identification
+  mode-line-buffer-identification
+  sml/pos-id-separator
+  mode-line-position
+  (vc-mode vc-mode)
+  sml/pre-modes-separator
+  mode-line-modes
+  mode-line-misc-info
+  mode-line-end-spaces
+))
 
 ;;
 ;; mode
@@ -192,20 +349,77 @@
                         (setq octave-block-offset 1)
                         (setq octave-continuation-offset 1))))
 
+(setq
+ lisp-body-indent 1
+ )
+
+(setq
+ verilog-align-ifelse t
+ verilog-auto-delete-trailing-whitespace t
+ verilog-auto-inst-param-value t
+ verilog-auto-inst-vector nil
+ verilog-auto-lineup nil
+ verilog-auto-newline nil
+ verilog-auto-save-policy nil
+ verilog-auto-template-warn-unused t
+ verilog-case-indent 1
+ verilog-cexp-indent 1
+ verilog-highlight-grouping-keywords t
+ verilog-highlight-modules t
+ verilog-indent-level 1
+ verilog-indent-level-behavioral 1
+ verilog-indent-level-declaration 1
+ verilog-indent-level-module 1
+ verilog-tab-to-comment t
+)
+
+(setq octave-mode-hook
+      (lambda () (progn (setq octave-comment-char ?%)
+                        (setq comment-start "%")
+                        (setq indent-tabs-mode nil)
+                        (setq comment-add 0)
+                        (setq tab-width 1)
+                        (setq tab-stop-list (number-sequence 2 200 2))
+                        (setq octave-block-offset 2)
+                        (setq abbrev-mode 1)
+                        (setq auto-fill-mode 1)
+                        (if (eq window-system 'x)
+                            (font-lock-mode 1))
+                        (setq octave-block-offset 1)
+                        (setq octave-continuation-offset 1))))
+
 ;;
 ;; whitespace-mode
 ;;
 ;; Nov 14 2015  martin.pos@2lazy.nl  - creation
 ;; Aug 06 2020  martin.pos@nxp.com   - removed colors (theme-compatibility)
+;; Oct 21 2020  martin.pos@nxp.com   - added colors (struggle)
 ;;(require 'whitespace)
 (progn
  (whitespace-mode -1)
  (global-whitespace-mode -1)
- (setq whitespace-line-column 130)
- (setq whitespace-style '(face empty tabs spaces trailing newline empty))
+ (setq whitespace-line-column 230)
+ (setq whitespace-style '(face empty tabs spaces trailing newline))
  (whitespace-mode 1)
  (global-whitespace-mode 1)
-)
+ )
+;; colors (dark theme)
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(whitespace-empty ((t (:background "gray20"))))
+ '(whitespace-hspace ((t (:foreground "yellow" :background "red"))))
+ '(whitespace-indentation ((t (:background "yellow" :foreground "red"))))
+ '(whitespace-line ((t (:background "gray30" :foreground "orange"))))
+ '(whitespace-newline ((t (:background "gray20" :foreground "gray30"))))
+ '(whitespace-space ((t (:background "gray20" :foreground "gray30"))))
+ '(whitespace-space-after-tab ((t (:background "yellow" :foreground "red"))))
+ '(whitespace-space-before-tab ((t (:background "yellow" :foreground "red"))))
+ '(whitespace-tab ((t (:background "red"))))
+ '(whitespace-trailing ((t (:background "gray20")))))
+
 (add-hook 'before-save-hook 'whitespace-cleanup)
 
 ;;
@@ -218,6 +432,14 @@
  vhdl-upper-case-types t
  vhdl-end-comment-column 130
 )
+
+
+;;
+;;  size and position new frames
+;;
+(when window-system
+      (set-frame-position (selected-frame) 0 0)
+      (set-frame-size (selected-frame) 91 63))
 
 ;;
 ;; generic
@@ -243,6 +465,7 @@
 (setq sentence-end-double-space nil)
 (yas-global-mode 1)
 (setq-default fill-column 130)
+(setq-default truncate-lines t)
 (add-hook 'text-mode-hook 'turn-on-auto-fill)
 (savehist-mode 1)
 (cua-selection-mode t)
@@ -250,8 +473,7 @@
 (setq cua-keep-region-after-copy t)
 (wrap-region-mode t)
 (recentf-mode 1)
-(setq recentf-max-menu-items 200
-      recentf-max-menu-items 50)
+(setq recentf-max-menu-items 800)
 (setq-default history-length 5000)
 (setq ido-create-new-buffer (quote never)
       ido-enable-flex-matching t
@@ -270,7 +492,7 @@
 (setq-default indent-tabs-mode nil)
 (setq-default tab-width 1)
 (setq tcl-indent-level 1)
-(setq tcl-continued-indent-level 1)
+(setq tcl-continued-indent-level 3)
 (tool-bar-mode -1)
 (diredp-toggle-find-file-reuse-dir 1)
 (setq hippie-expand-try-functions-list '(try-complete-file-name-partially
@@ -285,6 +507,7 @@
     try-complete-lisp-symbol))
 (setq browse-url-browser-function 'eww-browse-url)
 (setq help-window-select t)
+(setq mouse-autoselect-window 0.7)
 
 ;;
 ;; spelling - May 19 2016  martin.pos@nxp.com
@@ -305,12 +528,19 @@
 ;;
 ;; key bindings
 ;;
+(global-set-key (kbd "C-x C-b") 'ibuffer)
 (global-set-key (kbd "C-x C-r") 'recentf-open-files)
 (global-set-key (kbd "C-x y") 'my-ffap)
 (global-set-key (kbd "C-=") 'er/expand-region)
 (global-set-key (kbd "C-c n") 'cleanup-buffer)
 (global-set-key [home] 'smart-beginning-of-line)
 (global-set-key (kbd "C-x M-f") 'insert-file-name)
+(global-set-key (kbd "C-x M-d") (lambda () (interactive) (insert (shell-command-to-string "me -d"))))
+(global-set-key (kbd "C-x M-m") (lambda () (interactive) (insert (shell-command-to-string "me"))))
+(global-set-key (kbd "C-x M-M") (lambda () (interactive) (insert (shell-command-to-string "me -s"))))
+(global-set-key (kbd "C-x M-n") (lambda () (interactive) (insert (shell-command-to-string "me -n"))))
+(global-set-key (kbd "C-x M-y") (lambda () (interactive) (insert (shell-command-to-string "title -Y"))))
+(global-set-key (kbd "C-x M-h") 'cru-header)
 (global-set-key (kbd "C-x M-F") 'copy-file-name-to-clipboard)
 (global-set-key (kbd "M-\"") 'insert-pair)
 (global-set-key (kbd "<C-enter>") 'inline-shell-command)
@@ -325,8 +555,9 @@
 (global-unset-key [C-down-mouse-1])
 (global-set-key (kbd "C-x g") 'magit-status)
 (global-set-key (kbd "S-<insert>") 'yank-primary)
-;; browse-kill-ring: M-y
-(browse-kill-ring-default-keybindings)
+(global-set-key (kbd "C-x n") 'display-line-numbers-mode)
+(global-set-key (kbd "C-S-w") 'delete-region)
+
 ;; to be done
 (global-set-key (kbd "C-M-?") 't)
 (global-set-key (kbd "M-?")  't)
@@ -339,7 +570,7 @@
 (global-set-key (kbd "C-x S-<left>")  (lambda () (interactive) (windresize-left) (windresize)))
 (global-set-key (kbd "C-x S-<right>") (lambda () (interactive) (windresize-right) (windresize)))
 (global-set-key (kbd "C-x S-<up>")    (lambda () (interactive) (windresize-up) (windresize)))
-(global-set-key (kbd "C-x S-<down>")    (lambda () (interactive) (windresize-down) (windresize)))
+(global-set-key (kbd "C-x S-<down>")  (lambda () (interactive) (windresize-down) (windresize)))
 ;; C-mousewheel scales font size
 (global-set-key [C-mouse-4] 'text-scale-increase)
 (global-set-key [C-mouse-5] 'text-scale-decrease)
@@ -349,6 +580,9 @@
 (global-set-key (kbd "M-j") (lambda () (interactive) (join-line -1)))
 (global-set-key (kbd "C-c C-d") 'duplicate-line)
 (global-set-key (kbd "C-c d") 'duplicate-line)
+;; ace-window
+(set-face-attribute 'aw-leading-char-face nil :height 400)
+(global-set-key (kbd "C-c w") 'ace-window)
 ;; jump
 (global-set-key (kbd "C-x j") 'ace-jump-mode)
 (global-set-key (kbd "M-m") 'jump-char-forward)
@@ -368,25 +602,29 @@
 (global-set-key (kbd "C-z q") 'mc/mark-all-in-region-regexp)
 (global-set-key (kbd "C-z r") 'set-rectangular-region-anchor)
 (global-set-key (kbd "C-z s") 'mc/mark-next-like-this-symbol)
+(global-set-key (kbd "C-z SPC") 'mc/mark-pop)
 (global-set-key (kbd "C-z <right>") 'set-rectangular-region-anchor)
 ;; advanced isearch
-(global-set-key (kbd "C-S-s") 'isearch-forward-symbol-at-point)
-(global-set-key (kbd "C-S-r") (lambda () (interactive) (isearch-forward-symbol-at-point) (isearch-repeat-backward)))
+(global-set-key (kbd "C-S-s") 'isearch-forward-region)
+(global-set-key (kbd "C-S-r") 'isearch-backward-region)
 (progn
-  ;; set arrow keys in isearch. left/right is backward/forward, up/down is history. press Return to exit
-  ;; from: http://ergoemacs.org/emacs/emacs_isearch_by_arrow_keys.html
-  (define-key isearch-mode-map (kbd "C-<up>") 'isearch-ring-retreat )
-  (define-key isearch-mode-map (kbd "C-<down>") 'isearch-ring-advance )
-  (define-key isearch-mode-map (kbd "C-<left>") 'isearch-repeat-backward)
-  (define-key isearch-mode-map (kbd "C-<right>") 'isearch-repeat-forward)
-  (define-key minibuffer-local-isearch-map (kbd "<left>") 'isearch-reverse-exit-minibuffer)
-  (define-key minibuffer-local-isearch-map (kbd "<right>") 'isearch-forward-exit-minibuffer)
-  )
+ ;; set arrow keys in isearch. left/right is backward/forward, up/down is history. press Return to exit
+ ;; from: http://ergoemacs.org/emacs/emacs_isearch_by_arrow_keys.html
+ (define-key isearch-mode-map (kbd "C-<up>") 'isearch-ring-retreat )
+ (define-key isearch-mode-map (kbd "C-<down>") 'isearch-ring-advance )
+ (define-key isearch-mode-map (kbd "C-<left>") 'isearch-repeat-backward)
+ (define-key isearch-mode-map (kbd "C-<right>") 'isearch-repeat-forward)
+ (define-key minibuffer-local-isearch-map (kbd "<left>") 'isearch-reverse-exit-minibuffer)
+ (define-key minibuffer-local-isearch-map (kbd "<right>") 'isearch-forward-exit-minibuffer)
+)
 ;; todo
 (global-set-key (kbd "<f6>") 'todo-run)
-(global-set-key (kbd "S-<f6>") 'todo-jump)
 (global-set-key (kbd "C-<f6>") 'todo-ul)
-(global-set-key (kbd "M-<f6>") 'todo-jump-title)
+(global-set-key (kbd "S-<f6>") (lambda () (interactive) (todo-jump "todo")))
+(global-set-key (kbd "C-S-<f6>") (lambda () (interactive) (todo-jump "last")))
+(global-set-key (kbd "M-<f6>") (lambda () (interactive) (todo-jump "title")))
+(global-set-key (kbd "M-S-<f6>") (lambda () (interactive) (todo-jump "end")))
+(global-set-key (kbd "C-M-<f6>") (lambda () (interactive) (todo-jump "")))
 ;; refresh, source: https://www.emacswiki.org/emacs/RevertBuffer, edited (messages)
 (global-set-key
   (kbd "<f5>")
@@ -406,6 +644,168 @@
         (message "Force refresh modifed buffer: %s" buffer-file-name)
         (revert-buffer :ignore-auto :noconfirm))))))
 
+;; browse-kill-ring: M-y
+(browse-kill-ring-default-keybindings)
+(setq
+ browse-kill-ring-show-preview nil
+ browse-kill-ring-highlight-current-entry t
+ browse-kill-ring-separator "======================================"
+)
+
+;; cru-header
+;;
+;; Sep 14 2021  martin.pos@nxp.com  - todo-header
+;;
+(defun cru-header (&optional length)
+  "TODO heading"
+  (interactive "P")
+  (if (use-region-p)
+      (setq
+       start (region-beginning)
+       end (region-end)
+       )
+    (setq
+     start (point-at-bol)
+     end (point-at-eol)
+     )
+    )
+  (setq input (concat (buffer-substring start end) "\n"))
+  (if length
+      (setq command (concat "header -n " (number-to-string length) input))
+    (setq command (concat "header " input))
+    )
+  (goto-char end)
+  (insert "\n" (shell-command-to-string command))
+  (message "cru-header: %s" command)
+  )
+
+;; mpp-hilite
+;;
+;; May 04 2021  martin.pos@nxp.com  - creation
+;; Dec 15 2021  martin.pos@nxp.com  - use region or thing-at-point
+;;                                  - color updates
+;;
+(progn
+ ;; faces
+ (defface mpp-hilite-red '(
+  (((background  dark)) :foreground "#FF0000" :weight bold)
+  (((background light)) :foreground "#FF0000" :weight bold))
+  "my highlighting face 1"
+  :group 'mpp)
+ (defface mpp-hilite-green '(
+  (((background  dark)) :foreground "#00FF00" :weight bold)
+  (((background light)) :foreground "#00FF00" :weight bold))
+  "my highlighting face 1"
+  :group 'mpp)
+ (defface mpp-hilite-blue '(
+  (((background  dark)) :foreground "#0000FF" :weight bold)
+  (((background light)) :foreground "#0000FF" :weight bold))
+  "my highlighting face 1"
+  :group 'mpp)
+ (defface mpp-hilite-yellow '(
+  (((background  dark)) :foreground "#FFFF00" :weight bold)
+  (((background light)) :foreground "#FFFF00" :weight bold))
+  "my highlighting face 1"
+  :group 'mpp)
+ (defface mpp-hilite-magenta '(
+  (((background  dark)) :foreground "#FF00FF" :weight bold)
+  (((background light)) :foreground "#FF00FF" :weight bold))
+  "my highlighting face 1"
+  :group 'mpp)
+ (defface mpp-hilite-white '(
+  (((background  dark)) :foreground "#FFFFFF" :weight bold)
+  (((background light)) :foreground "#FFFFFF" :weight bold))
+  "my highlighting face 1"
+  :group 'mpp)
+ (defface mpp-hilite-1 '(
+  (((background  dark)) :background "#FFFFFF" :foreground "#FF0000" :weight bold)
+  (((background light)) :background "#000000" :foreground "#FF0000" :weight bold))
+  "my highlighting face 1"
+  :group 'mpp)
+ (defface mpp-hilite-2 '(
+  (((background  dark)) :background "#FFFFFF" :foreground "#00FF00" :weight bold)
+  (((background light)) :background "#000000" :foreground "#00FF00" :weight bold))
+  "my highlighting face 2"
+  :group 'mpp)
+ (defface mpp-hilite-3 '(
+  (((background  dark)) :background "#FFFFFF" :foreground "#0000FF" :weight bold)
+  (((background light)) :background "#000000" :foreground "#0000FF" :weight bold))
+  "my highlighting face 3"
+  :group 'mpp)
+ (defface mpp-hilite-4 '(
+  (((background  dark)) :background "#FFFFFF" :foreground "#FF00FF" :weight bold)
+  (((background light)) :background "#000000" :foreground "#FF00FF" :weight bold))
+  "my highlighting face 4"
+  :group 'mpp)
+ (defface mpp-hilite-5 '(
+  (((background  dark)) :background "#FFFFFF" :foreground "#000000" :weight bold)
+  (((background light)) :background "#000000" :foreground "#FFFFFF" :weight bold))
+  "my highlighting face 1"
+  :group 'mpp)
+ ;; list with faces to use
+ (setq
+  hi-lock-face-defaults '(
+   "mpp-hilite-red"
+   "mpp-hilite-green"
+   "mpp-hilite-blue"
+   "mpp-hilite-yellow"
+   "mpp-hilite-magenta"
+   "mpp-hilite-white"
+   "mpp-hilite-1"
+   "mpp-hilite-2"
+   "mpp-hilite-3"
+   "mpp-hilite-4"
+   "hi-pink"
+   "hi-green"
+   "hi-blue"
+   "hi-black-b"
+   "hi-blue-b"
+   "hi-red-b"
+   "hi-green-b"
+   "hi-black-hb"
+   "hi-yellow"
+  )
+  mpp-hilite-last-index 0
+ )
+ (defun mpp-hilite (arg)
+  "highlight selection or at point when no , prefix selects face, last face when no prefix"
+  (interactive "P")
+  (if arg (setq mpp-hilite-last-index arg))
+  (let* (
+    (face-name (nth (- mpp-hilite-last-index 1) hi-lock-face-defaults))
+    regexp
+   )
+   (if (use-region-p)
+    (setq regexp (regexp-quote (buffer-substring (region-beginning) (region-end))))
+    (setq regexp (concat "\\_<" (thing-at-point 'symbol) "\\_>"))
+   )
+   (message "mpp-hilite: regexp: %s %s (%d)" regexp face-name mpp-hilite-last-index)
+   (unhighlight-regexp regexp)
+   (highlight-regexp regexp face-name)
+  )
+ )
+ (defun mpp-unhilite (arg)
+  "unhighlight at point, unhighlight all if prefix used"
+  (interactive "P")
+  (if arg
+   (progn
+    (message "mpp-unhilite: unhighlight all")
+    (unhighlight-regexp t)
+   )
+   (let* (regexp)
+    (if (use-region-p)
+     (setq regexp (regexp-quote (buffer-substring (region-beginning) (region-end))))
+     (setq regexp (concat "\\_<" (thing-at-point 'symbol) "\\_>"))
+    )
+    (message "mpp-unhilite: regexp: %s" regexp)
+    (unhighlight-regexp regexp)
+   )
+  )
+ )
+ (global-set-key (kbd "C-<f1>") 'mpp-hilite)
+ (global-set-key (kbd "M-<f1>") 'mpp-unhilite)
+)
+
 ;; evil-numbers
 (global-set-key (kbd "<kp-add>") 'evil-numbers/inc-at-pt)
 (global-set-key (kbd "<kp-subtract>") 'evil-numbers/dec-at-pt)
@@ -419,6 +819,62 @@
 (global-set-key (kbd "C-M-<f8>") 'flyspell-buffer)
 (global-set-key (kbd "C-<f8>") 'flyspell-check-previous-highlighted-word)
 (global-set-key (kbd "M-<f8>") 'flyspell-check-next-highlighted-word)
+
+;;
+;; Mar 10 2021  martin.pos@nxp.com  - creation
+;; Jul 22 2021  martin.pos@nxp.com  - special todo-search
+;;
+(defun isearch-forward-region ()
+ "search region-text forwards, repeat if no active region"
+ (interactive)
+ (let (start end line str)
+  (if (use-region-p)
+   (progn
+    (setq
+     start (region-beginning)
+     end (region-end)
+    )
+    (deactivate-mark)
+    (isearch-forward nil 1)
+    (isearch-yank-string (buffer-substring start end))
+   )
+   (if (string= last-command "isearch-forward-region")
+    (isearch-repeat-forward)
+    ; special todo-search
+    (setq line (thing-at-point 'line t))
+    (save-match-data
+     (and (string-match " *\\(?:[0-9.]+  +\\)?\\(.*?\\)\\(?:  +\\| *$\\)" line)
+      (setq str (match-string 1 line))
+     )
+    )
+    (message "special search: %s" str)
+    (forward-line)
+    (deactivate-mark)
+    (isearch-forward nil 1)
+    (isearch-yank-string str)
+   )
+  )
+ )
+)
+
+(defun isearch-backward-region ()
+ "search region-text backwards, repeat if no active region"
+ (interactive)
+ (let (start end)
+  (if (use-region-p)
+   (progn
+    (setq
+     start (region-beginning)
+     end (region-end)
+    )
+    (deactivate-mark)
+    (isearch-backward nil 1)
+    (isearch-yank-string (buffer-substring start end))
+   )
+   (isearch-repeat-backward)
+  )
+ )
+)
 
 ;;
 ;; Oct 24 2015 martin.pos@2lazy.nl - inline-shell-command
@@ -503,20 +959,25 @@
 ;; Jun 27 2018  martin.pos@nxp.com - ffap visits files and urls (!), prompt is annoying though
 ;; Mar 13 2020  martin.pos@nxp.com - substitute-in-file-name, avoids prompt in case of environment variables (e.g. $HOME/.bashrc.user)
 ;; Sep 10 2020  martin.pos@nxp.com - fix opening file://<path> (addtional to file:////<path>)
+;; May 10 2021  martin.pos@nxp.com - prefix argument to open in other window
 ;;
 ;; based on: https://www.reddit.com/r/emacs/comments/676r5b/how_to_stop_findfileatprompting_when_there_is_a
-(defun my-ffap (&optional name-input)
- (interactive)
+(defun my-ffap (arg)
+ (interactive "P")
  (let* (
-   (name (or name-input (ffap-string-at-point 'file)))
+   (name (ffap-string-at-point 'file))
    (name (replace-regexp-in-string "file://\\(\[^/\]\\)" "file:////\\1" name))
    (filename (expand-file-name name))
    (filename (substitute-in-file-name filename))
   )
   (message "my-ffap: name=\"%s\"" name)
   (if (and name filename (file-exists-p filename))
-   (find-file filename)
-   (find-file-at-point name)
+   (if arg
+    (find-file-other-window filename)
+    (find-file filename))
+   (if arg
+    (ffap-other-window name)
+    (find-file-at-point name))
   )
  )
 )
@@ -740,6 +1201,9 @@ The optional argument can be generated with `make-hippie-expand-function'."
 ;; TODO
 ;;
 ;; Jul 06 2018  martin.pos@nxp.com  - creation
+;; Feb 18 2021  martin.pos@nxp.com  - todo-jump replaces all todo-jump-<>
+;; Jul 23 2021  martin.pos@nxp.com  - todo-jump improved title and end points
+;; Jan 13 2022  martin.pos@nxp.com  - todo-jump "last" added
 ;;
 (defun todo-run ()
   "run todo script to generate web-page"
@@ -751,17 +1215,10 @@ The optional argument can be generated with `make-hippie-expand-function'."
  fi=%s; \
  fo=$HOME/public_html/TODO/$p/index.html; \
  todo=$HOME/projects/BAP3_DIE2/data/aar_tdf8533_manager/aar_tdf8533_manager/bin/todo; \
- msg=$((time $todo -s -l ~/public_html/TODO/$p -u Uncategorized $fi > $fo) 2>&1 | perl -ne 'if (s/^real\\s+/run-todo, time: /) {print}'); \
+ msg=$((time $todo -l ~/public_html/TODO/$p -u Uncategorized $fi > $fo) 2>&1 | perl -ne 'if (s/^real\\s+/run-todo, time: /) {print}'); \
  chmod -R o+rX $d; \
  echo -n \"$msg\"
 " (buffer-file-name)))))
-
-(defun todo-jump ()
-  "jmup to latest TODO section"
-  (interactive)
-  (deactivate-mark)
-  (goto-char (point-max))
-  (re-search-backward "^TODO:" nil nil))
 
 (defun todo-ul (&optional heading)
   "TODO heading"
@@ -786,61 +1243,51 @@ The optional argument can be generated with `make-hippie-expand-function'."
   (exchange-point-and-mark)
   )
 
- (defun todo-jump-title ()
-   "jump to latest todo title"
-   (interactive)
-   (deactivate-mark)
-   (let ((point-cur (point)))
-     (if (and (boundp 'todo-point-title) (boundp 'todo-point-work) (eq point-cur todo-point-title))
-         (goto-char todo-point-work)
+(defun todo-jump (where)
+  "jump around"
+  (interactive "swhere?")
+  (deactivate-mark)
+  (let ((point-cur (point)))
+    (cond
+     ((equal where "title")
+      (if (and (boundp 'todo-point-title) (boundp 'todo-point-work) (eq point-cur todo-point-title))
+        (goto-char todo-point-work)
        (progn
-         (setq todo-point-work point-cur)
-         (setq todo-point-title (re-search-backward "^ *title .*\"[^\"]+\" *$" ))))))
-
-;; based on
-;;  https://stackoverflow.com/questions/202803/searching-for-marked-selected-text-in-emacs
-;;  https://stackoverflow.com/questions/10594208/how-do-i-get-the-region-selection-programmatically-in-emacs-lisp/10595146
-
-;; (defun isearch-region (begin end)
-;;   "Use region as the isearch text."
-;;   (if (use_region-p)
-;;     (let ((region (funcall region-extract-function nil)))
-;;       (deactivate-mark)
-;;       (isearch-push-state)
-;;       (isearch-yank-string region))))
-;; (remove-hook 'isearch-mode-hook #'isearch-region)
-
-;; (defun get-search-term ()
-;;   (interactive)
-;;   (let (
-;;         (selection (buffer-substring-no-properties (region-beginning) (region-end))))
-;;     (if (= (length selection) 0)
-;;         (message "empty string")
-;;       (message selection))))
-;;
-;; (defun get-search-term (begin end)
-;;   "message region or \"empty string\" if none highlighted"
-;;   (interactive (if (use-region-p)
-;;                    (list (region-beginning) (region-end))
-;;                  (list nil nil)))
-;;   (if (and begin end)
-;;       (let ((selection (buffer-substring-no-properties begin end))))
-;;       (message "empty string xx")
-;;     )
-;;          (message "empty string xx")
-;;       (message selection))))
-;;
-;; (defun isearch-selection (start end)
-;;   "use selection as search string"
-;;   (interactive (if (use-region-p)
-;;                    (list (region-beginning) (region-end))
-;;                  (list nil nil)))
-;;   (let (selection (buffer-substring start end) "\n"))
-;;   (setq command (read-shell-command "Shell command: "))
-;;   (goto-char end)
-;;   (shell-command-on-region start end command t t)
-;;   (exchange-point-and-mark)
-;;   )
+        (setq todo-point-work point-cur)
+        (re-search-backward "^ *title .*\"[^\"]+\" *$" )
+        (re-search-forward "^-+$" )
+        (forward-line)
+        (setq todo-point-title (point))
+        )))
+     ((equal where "end")
+      (if (and (boundp 'todo-point-end) (boundp 'todo-point-work) (eq point-cur todo-point-end))
+        (goto-char todo-point-work)
+       (progn
+          (setq todo-point-work point-cur)
+          (re-search-forward "^ *title .*\"[^\"]+\" *$" nil t)
+          (forward-line -1)
+          (setq todo-point-end (point))
+          (if (equal todo-point-end nil)
+              (progn
+                (setq todo-point-end (point-max))
+                (goto-char todo-point-end))))))
+     ((equal where "todo")
+      (if (and (boundp 'todo-point-todo) (boundp 'todo-point-work) (eq point-cur todo-point-todo))
+           (goto-char todo-point-work)
+         (progn
+           (setq todo-point-work point-cur)
+           (goto-char (point-max))
+           (setq todo-point-todo (re-search-backward "^TODO:" nil nil)))))
+     ((equal where "last")
+      (if (and (boundp 'todo-point-todo) (boundp 'todo-point-work) (eq point-cur todo-point-todo))
+           (goto-char todo-point-work)
+         (progn
+           (setq todo-point-work point-cur)
+           (goto-char (point-max))
+           (setq todo-point-todo (re-search-backward "^ *\n\\(?:-\\{80,\\}\n\\)\\{5,\\}" nil nil)))))
+     (t
+      (if (boundp 'todo-point-work)
+          (goto-char todo-point-work))))))
 
 ;; flyspell-add-word
 ;;
@@ -859,7 +1306,7 @@ The optional argument can be generated with `make-hippie-expand-function'."
 ;;
 ;; Oct 15 2020  martin.pos@nxp.com  - creation
 ;;
-;; source: https://www.emacswiki.org/emacs/FlySpell
+;; source: https://www.emacswiki.org/emacs/FlySpellq
 ;;
 (defun flyspell-check-next-highlighted-word ()
   "Custom function to spell check next highlighted word"
@@ -871,6 +1318,7 @@ The optional argument can be generated with `make-hippie-expand-function'."
 ;; diff-environment
 ;;
 ;; Aug 12 2020 martin.pos@nxp.com  - creation
+;; Mar 03 2021 martin.pos@nxp.com  - fix equal v nil
 ;;
 ;; inspired by: https://gist.github.com/ffevotte/9345586
 ;;
@@ -911,8 +1359,8 @@ The optional argument can be generated with `make-hippie-expand-function'."
   )
   (while (string-match re2 str pos)
    (setq v (match-string 2 str))
-   (setq v (replace-regexp-in-string (rx "\\" (group anything)) "\\1" v))
    (if (equal v nil) (setq v ""))
+   (setq v (replace-regexp-in-string (rx "\\" (group anything)) "\\1" v))
    (puthash (match-string 1 str) v env2)
    (setq pos (match-end 0))
   )
@@ -995,35 +1443,39 @@ The optional argument can be generated with `make-hippie-expand-function'."
    (insert "  " (make-string 30 ?#) "\n")
   )
  )
-)
+ )
 
-;; customize
+;;
+;; macros
+;;
+;; Oct 22 2020  martin.pos@nxp.com  - creation
+;;
+(fset 'm-tcl-1
+   [?\C-\M-n ?\C-  ?\C-\M-p delete ?\C-u ?\C-  backspace])
+(fset 'm-head
+   (lambda (&optional arg) "Keyboard macro." (interactive "p") (kmacro-exec-ring-item (quote ([134217788 24 114 105 49 up up C-right C-left C-S-right C-S-right C-S-right delete 24 134217828 up up up up up up up C-right C-right C-right right home C-right C-right C-right right right 11 C-M-kp-enter 99 105 110 102 111 32 48 backspace 45 99 return home up up up up C-right C-right C-left 11 24 134217828 home up up up C-right C-right C-left 11 24 134217830 home 134217790] 0 "%d")) arg)))
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(Tool-bar-mode nil)
  '(ansi-color-faces-vector
-   [default bold shadow italic underline bold bold-italic bold])
- '(ansi-color-names-vector
-   ["#3f3f3f" "#ea3838" "#7fb07f" "#fe8b04" "#62b6ea" "#e353b9" "#1fb3b3" "#d5d2be"])
+   [default default default italic underline success warning error])
  '(ansi-term-color-vector
    [unspecified "#FFFFFF" "#d15120" "#5f9411" "#d2ad00" "#6b82a7" "#a66bab" "#6b82a7" "#505050"])
- '(beacon-color "#c82829")
+ '(beacon-color "#cc6666")
  '(company-quickhelp-color-background "#4F4F4F")
  '(company-quickhelp-color-foreground "#DCDCCC")
- '(custom-enabled-themes (quote (smart-mode-line-dark)))
  '(custom-safe-themes
    (quote
-    ("60940e1f2fa3f4e61e7a7ed9bab9c22676aa25f927d5915c8f0fa3a8bf529821" "b9e9ba5aeedcc5ba8be99f1cc9301f6679912910ff92fdf7980929c2fc83ab4d" "84d2f9eeb3f82d619ca4bfffe5f157282f4779732f48a5ac1484d94d5ff5b279" "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" "a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" "3c83b3676d796422704082049fc38b6966bcad960f896669dfc21a7a37a748fa" "24714e2cb4a9d6ec1335de295966906474fdb668429549416ed8636196cb1441" "5e3fc08bcadce4c6785fc49be686a4a82a356db569f55d411258984e952f194a" "a0feb1322de9e26a4d209d1cfa236deaf64662bb604fa513cca6a057ddf0ef64" "ab04c00a7e48ad784b52f34aa6bfa1e80d0c3fcacc50e1189af3651013eb0d58" "04dd0236a367865e591927a3810f178e8d33c372ad5bfef48b5ce90d4b476481" "7356632cebc6a11a87bc5fcffaa49bae528026a78637acd03cae57c091afd9b9" "7153b82e50b6f7452b4519097f880d968a6eaf6f6ef38cc45a144958e553fbc6" "3d4df186126c347e002c8366d32016948068d2e9198c496093a96775cc3b3eaa" "57e3f215bef8784157991c4957965aa31bac935aca011b29d7d8e113a652b693" "d4f8fcc20d4b44bf5796196dbeabec42078c2ddb16dcb6ec145a1c610e0842f3" "afd761c9b0f52ac19764b99d7a4d871fc329f7392dfc6cd29710e8209c691477" "76b4632612953d1a8976d983c4fdf5c3af92d216e2f87ce2b0726a1f37606158" "e7ba99d0f4c93b9c5ca0a3f795c155fa29361927cadb99cfce301caf96055dfd" "9fbb62620cc371ccfb34fa17e8501a5aa53ce6e33b0837381d087d74cf829391" "87de2a48139167bfe19e314996ee0a8d081a6d8803954bafda08857684109b4e" "409e4d689f1e29e5a18f536507e6dc760ee9da76dc56481aaa0696705e6be968" "fd0396fcf5f148f85cd29dc0c2321582df3b55a395a0eb33d636b433bae49bba" "ae88c445c558b7632fc2d72b7d4b8dfb9427ac06aa82faab8d760fff8b8f243c" "f56eb33cd9f1e49c5df0080a3e8a292e83890a61a89bceeaa481a5f183e8e3ef" "b89a4f5916c29a235d0600ad5a0849b1c50fab16c2c518e1d98f0412367e7f97" "06f0b439b62164c6f8f84fdda32b62fb50b6d00e8b01c2208e55543a6337433a" "628278136f88aa1a151bb2d6c8a86bf2b7631fbea5f0f76cba2a0079cd910f7d" "bb08c73af94ee74453c90422485b29e5643b73b05e8de029a6909af6a3fb3f58" "1b8d67b43ff1723960eb5e0cba512a2c7a2ad544ddb2533a90101fd1852b426e" "82d2cac368ccdec2fcc7573f24c3f79654b78bf133096f9b40c20d97ec1d8016" "fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" "bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" "711efe8b1233f2cf52f338fd7f15ce11c836d0b6240a18fffffc2cbd5bfe61b0" "1623aa627fecd5877246f48199b8e2856647c99c6acdab506173f9bb8b0a41ac" "79278310dd6cacf2d2f491063c4ab8b129fee2a498e4c25912ddaa6c3c5b621e" "e1ef2d5b8091f4953fe17b4ca3dd143d476c106e221d92ded38614266cea3c8b" "7a994c16aa550678846e82edc8c9d6a7d39cc6564baaaacc305a3fdc0bd8725f" "82360e5f96244ce8cc6e765eeebe7788c2c5f3aeb96c1a765629c5c7937c0b5b" "6c3b5f4391572c4176908bb30eddc1718344b8eaff50e162e36f271f6de015ca" "37144b437478e4c235824f0e94afa740ee2c7d16952e69ac3c5ed4352209eefb" "5d09b4ad5649fea40249dd937eaaa8f8a229db1cec9a1a0ef0de3ccf63523014" "7b3d184d2955990e4df1162aeff6bfb4e1c3e822368f0359e15e2974235d9fa8" "54cf3f8314ce89c4d7e20ae52f7ff0739efb458f4326a2ca075bf34bc0b4f499" "7d708f0168f54b90fc91692811263c995bebb9f68b8b7525d0e2200da9bc903c" "c83c095dd01cde64b631fb0fe5980587deec3834dc55144a6e78ff91ebc80b19" "730a87ed3dc2bf318f3ea3626ce21fb054cd3a1471dcd59c81a4071df02cb601" "2cdc13ef8c76a22daa0f46370011f54e79bae00d5736340a5ddfe656a767fddf" "93ed23c504b202cf96ee591138b0012c295338f38046a1f3c14522d4a64d7308" "2f1518e906a8b60fac943d02ad415f1d8b3933a5a7f75e307e6e9a26ef5bf570" "99ea831ca79a916f1bd789de366b639d09811501e8c092c85b2cb7d697777f93" "b5fff23b86b3fd2dd2cc86aa3b27ee91513adaefeaa75adc8af35a45ffb6c499" "3c2f28c6ba2ad7373ea4c43f28fcf2eed14818ec9f0659b1c97d4e89c99e091e" "bf387180109d222aee6bb089db48ed38403a1e330c9ec69fe1f52460a8936b66" "e074be1c799b509f52870ee596a5977b519f6d269455b84ed998666cf6fc802a" "dde8c620311ea241c0b490af8e6f570fdd3b941d7bc209e55cd87884eb733b0e" "5b809c3eae60da2af8a8cfba4e9e04b4d608cb49584cb5998f6e4a1c87c057c4" "71e5acf6053215f553036482f3340a5445aee364fb2e292c70d9175fb0cc8af7" "d74c5485d42ca4b7f3092e50db687600d0e16006d8fa335c69cf4f379dbd0eee" "be9645aaa8c11f76a10bcf36aaf83f54f4587ced1b9b679b55639c87404e2499" "9efb2d10bfb38fe7cd4586afb3e644d082cbcdb7435f3d1e8dd9413cbe5e61fc" "cae81b048b8bccb7308cdcb4a91e085b3c959401e74a0f125e7c5b173b916bf9" "01cf34eca93938925143f402c2e6141f03abb341f27d1c2dba3d50af9357ce70" "5036346b7b232c57f76e8fb72a9c0558174f87760113546d3a9838130f1cdb74" "2899018e19d00bd73c10c4a3859967c57629c58a955a2576d307d9bdfa2fea35" "8d7684de9abb5a770fbfd72a14506d6b4add9a7d30942c6285f020d41d76e0fa" "f7216d3573e1bd2a2b47a2331f368b45e7b5182ddbe396d02b964b1ea5c5dc27" "3df5335c36b40e417fec0392532c1b82b79114a05d5ade62cfe3de63a59bc5c6" "fe00bb593cb7b8c015bb2eafac5bfc82a9b63223fbc2c66eddc75c77ead7c7c1" "57bd93e7dc5fbb5d8d27697185b753f8563fe0db5db245592bab55a8680fdd8c" "76bfa9318742342233d8b0b42e824130b3a50dcc732866ff8e47366aed69de11" "c4bdbbd52c8e07112d1bfd00fee22bf0f25e727e95623ecb20c4fa098b74c1bd" "a3b6a3708c6692674196266aad1cb19188a6da7b4f961e1369a68f06577afa16" "f2927d7d87e8207fa9a0a003c0f222d45c948845de162c885bf6ad2a255babfd" "4bca89c1004e24981c840d3a32755bf859a6910c65b829d9441814000cf6c3d0" "990e24b406787568c592db2b853aa65ecc2dcd08146c0d22293259d400174e37" "dd4db38519d2ad7eb9e2f30bc03fba61a7af49a185edfd44e020aa5345e3dca7" "79df7564981931c32b20391f8b46c70652a3d5bc64ab04b525e0760f3f79efd0" "074b3ab8695f742cc500fa9ace4b34ef7ced2451918d79ef0f596e04f2e1b101" "ac7dbc65ba1b73367d21179534a59a2b55215a22c1ce7e8e3d33e56cb740088d" "ac05beef308540043af99fafe5cbdf036586e9571f69c9ca48fee0605ee44759" "6d5e6704b62c25ef75f4c6ac25240f91f784b0e651e1c62b80ae24c6a67ad627" "eecdab5c7ce8f278a10274a173449d739226ffb3dcffdf27292be2f0a05df3c2" "4527ad80568d218b57e06ff1cab2e5391ab17e4c3252e74a3ea9d6db2d961db5" "5422b05b20c27caf9fe7a511baa8f3bcbaa3ea823cf54e7105fe759923047a26" default)))
+    ("29d4d1527281b9aa07608d62556d9946a9e47d6e276d08493431bdef55ef010c" "08780b0f3811cc72df9d0be95c2ae7cf5a0f89991f75cbc331f901689e8e0b55" "e29a6c66d4c383dbda21f48effe83a1c2a1058a17ac506d60889aba36685ed94" "074b3ab8695f742cc500fa9ace4b34ef7ced2451918d79ef0f596e04f2e1b101" "eecdab5c7ce8f278a10274a173449d739226ffb3dcffdf27292be2f0a05df3c2" "79df7564981931c32b20391f8b46c70652a3d5bc64ab04b525e0760f3f79efd0" "f56eb33cd9f1e49c5df0080a3e8a292e83890a61a89bceeaa481a5f183e8e3ef" "e7ba99d0f4c93b9c5ca0a3f795c155fa29361927cadb99cfce301caf96055dfd" "76b4632612953d1a8976d983c4fdf5c3af92d216e2f87ce2b0726a1f37606158" "fa2b58bb98b62c3b8cf3b6f02f058ef7827a8e497125de0254f56e373abee088" "bffa9739ce0752a37d9b1eee78fc00ba159748f50dc328af4be661484848e476" "c74e83f8aa4c78a121b52146eadb792c9facc5b1f02c917e3dbb454fca931223" "3c83b3676d796422704082049fc38b6966bcad960f896669dfc21a7a37a748fa" "84d2f9eeb3f82d619ca4bfffe5f157282f4779732f48a5ac1484d94d5ff5b279" "b9e9ba5aeedcc5ba8be99f1cc9301f6679912910ff92fdf7980929c2fc83ab4d" "60940e1f2fa3f4e61e7a7ed9bab9c22676aa25f927d5915c8f0fa3a8bf529821" "d4f8fcc20d4b44bf5796196dbeabec42078c2ddb16dcb6ec145a1c610e0842f3" "afd761c9b0f52ac19764b99d7a4d871fc329f7392dfc6cd29710e8209c691477" "9fbb62620cc371ccfb34fa17e8501a5aa53ce6e33b0837381d087d74cf829391" "87de2a48139167bfe19e314996ee0a8d081a6d8803954bafda08857684109b4e" "409e4d689f1e29e5a18f536507e6dc760ee9da76dc56481aaa0696705e6be968" "fd0396fcf5f148f85cd29dc0c2321582df3b55a395a0eb33d636b433bae49bba" "ae88c445c558b7632fc2d72b7d4b8dfb9427ac06aa82faab8d760fff8b8f243c" "24714e2cb4a9d6ec1335de295966906474fdb668429549416ed8636196cb1441" "711efe8b1233f2cf52f338fd7f15ce11c836d0b6240a18fffffc2cbd5bfe61b0" "1623aa627fecd5877246f48199b8e2856647c99c6acdab506173f9bb8b0a41ac" "79278310dd6cacf2d2f491063c4ab8b129fee2a498e4c25912ddaa6c3c5b621e" "e1ef2d5b8091f4953fe17b4ca3dd143d476c106e221d92ded38614266cea3c8b" "7a994c16aa550678846e82edc8c9d6a7d39cc6564baaaacc305a3fdc0bd8725f" "82360e5f96244ce8cc6e765eeebe7788c2c5f3aeb96c1a765629c5c7937c0b5b" "6c3b5f4391572c4176908bb30eddc1718344b8eaff50e162e36f271f6de015ca" "37144b437478e4c235824f0e94afa740ee2c7d16952e69ac3c5ed4352209eefb" "5d09b4ad5649fea40249dd937eaaa8f8a229db1cec9a1a0ef0de3ccf63523014" "7b3d184d2955990e4df1162aeff6bfb4e1c3e822368f0359e15e2974235d9fa8" "54cf3f8314ce89c4d7e20ae52f7ff0739efb458f4326a2ca075bf34bc0b4f499" "7d708f0168f54b90fc91692811263c995bebb9f68b8b7525d0e2200da9bc903c" "c83c095dd01cde64b631fb0fe5980587deec3834dc55144a6e78ff91ebc80b19" "730a87ed3dc2bf318f3ea3626ce21fb054cd3a1471dcd59c81a4071df02cb601" "2cdc13ef8c76a22daa0f46370011f54e79bae00d5736340a5ddfe656a767fddf" "93ed23c504b202cf96ee591138b0012c295338f38046a1f3c14522d4a64d7308" "2f1518e906a8b60fac943d02ad415f1d8b3933a5a7f75e307e6e9a26ef5bf570" "99ea831ca79a916f1bd789de366b639d09811501e8c092c85b2cb7d697777f93" "b5fff23b86b3fd2dd2cc86aa3b27ee91513adaefeaa75adc8af35a45ffb6c499" "3c2f28c6ba2ad7373ea4c43f28fcf2eed14818ec9f0659b1c97d4e89c99e091e" "bf387180109d222aee6bb089db48ed38403a1e330c9ec69fe1f52460a8936b66" "e074be1c799b509f52870ee596a5977b519f6d269455b84ed998666cf6fc802a" "dde8c620311ea241c0b490af8e6f570fdd3b941d7bc209e55cd87884eb733b0e" "5b809c3eae60da2af8a8cfba4e9e04b4d608cb49584cb5998f6e4a1c87c057c4" "71e5acf6053215f553036482f3340a5445aee364fb2e292c70d9175fb0cc8af7" "d74c5485d42ca4b7f3092e50db687600d0e16006d8fa335c69cf4f379dbd0eee" "be9645aaa8c11f76a10bcf36aaf83f54f4587ced1b9b679b55639c87404e2499" "cae81b048b8bccb7308cdcb4a91e085b3c959401e74a0f125e7c5b173b916bf9" "01cf34eca93938925143f402c2e6141f03abb341f27d1c2dba3d50af9357ce70" "5036346b7b232c57f76e8fb72a9c0558174f87760113546d3a9838130f1cdb74" "2899018e19d00bd73c10c4a3859967c57629c58a955a2576d307d9bdfa2fea35" "8d7684de9abb5a770fbfd72a14506d6b4add9a7d30942c6285f020d41d76e0fa" "f7216d3573e1bd2a2b47a2331f368b45e7b5182ddbe396d02b964b1ea5c5dc27" "fe00bb593cb7b8c015bb2eafac5bfc82a9b63223fbc2c66eddc75c77ead7c7c1" "57bd93e7dc5fbb5d8d27697185b753f8563fe0db5db245592bab55a8680fdd8c" "76bfa9318742342233d8b0b42e824130b3a50dcc732866ff8e47366aed69de11" "c4bdbbd52c8e07112d1bfd00fee22bf0f25e727e95623ecb20c4fa098b74c1bd" "a3b6a3708c6692674196266aad1cb19188a6da7b4f961e1369a68f06577afa16" "f2927d7d87e8207fa9a0a003c0f222d45c948845de162c885bf6ad2a255babfd" "4bca89c1004e24981c840d3a32755bf859a6910c65b829d9441814000cf6c3d0" "990e24b406787568c592db2b853aa65ecc2dcd08146c0d22293259d400174e37" "b89a4f5916c29a235d0600ad5a0849b1c50fab16c2c518e1d98f0412367e7f97" "06f0b439b62164c6f8f84fdda32b62fb50b6d00e8b01c2208e55543a6337433a" "628278136f88aa1a151bb2d6c8a86bf2b7631fbea5f0f76cba2a0079cd910f7d" "bb08c73af94ee74453c90422485b29e5643b73b05e8de029a6909af6a3fb3f58" "1b8d67b43ff1723960eb5e0cba512a2c7a2ad544ddb2533a90101fd1852b426e" "82d2cac368ccdec2fcc7573f24c3f79654b78bf133096f9b40c20d97ec1d8016" "7153b82e50b6f7452b4519097f880d968a6eaf6f6ef38cc45a144958e553fbc6" "5e3fc08bcadce4c6785fc49be686a4a82a356db569f55d411258984e952f194a" "a0feb1322de9e26a4d209d1cfa236deaf64662bb604fa513cca6a057ddf0ef64" "ab04c00a7e48ad784b52f34aa6bfa1e80d0c3fcacc50e1189af3651013eb0d58" "04dd0236a367865e591927a3810f178e8d33c372ad5bfef48b5ce90d4b476481" "7356632cebc6a11a87bc5fcffaa49bae528026a78637acd03cae57c091afd9b9" "57e3f215bef8784157991c4957965aa31bac935aca011b29d7d8e113a652b693" "3d4df186126c347e002c8366d32016948068d2e9198c496093a96775cc3b3eaa" "9efb2d10bfb38fe7cd4586afb3e644d082cbcdb7435f3d1e8dd9413cbe5e61fc" "3df5335c36b40e417fec0392532c1b82b79114a05d5ade62cfe3de63a59bc5c6" "a27c00821ccfd5a78b01e4f35dc056706dd9ede09a8b90c6955ae6a390eb1c1e" default)))
  '(diary-entry-marker (quote font-lock-variable-name-face))
- '(emms-mode-line-icon-color "#1fb3b3")
+ '(emms-mode-line-icon-color "#358d8d")
  '(fci-rule-character-color "#d9d9d9")
- '(fci-rule-color "#222222")
  '(flycheck-color-mode-line-face-to-color (quote mode-line-buffer-id))
- '(frame-background-mode (quote light))
- '(gnus-logo-colors (quote ("#528d8d" "#c0c0c0")) t)
+ '(frame-background-mode (quote dark))
+ '(gnus-logo-colors (quote ("#259ea2" "#adadad")) t)
  '(gnus-mode-line-image-cache
    (quote
     (image :type xpm :ascent center :data "/* XPM */
@@ -1031,7 +1483,7 @@ static char *gnus-pointer[] = {
 /* width height num_colors chars_per_pixel */
 \"    18    13        2            1\",
 /* colors */
-\". c #1fb3b3\",
+\". c #358d8d\",
 \"# c None s None\",
 /* pixels */
 \"##################\",
@@ -1049,7 +1501,7 @@ static char *gnus-pointer[] = {
 \"###########.######\" };")) t)
  '(hl-paren-background-colors (quote ("#2492db" "#95a5a6" nil)))
  '(hl-paren-colors (quote ("#ecf0f1" "#ecf0f1" "#c0392b")))
- '(hl-sexp-background-color "#efebe9")
+ '(hl-sexp-background-color "#1c1f26")
  '(hl-todo-keyword-faces
    (quote
     (("TODO" . "#dc752f")
@@ -1067,134 +1519,42 @@ static char *gnus-pointer[] = {
      ("FIXME" . "#dc752f")
      ("XXX+" . "#dc752f")
      ("\\?\\?\\?+" . "#dc752f"))))
- '(jdee-db-active-breakpoint-face-colors (cons "#1B2229" "#51afef"))
- '(jdee-db-requested-breakpoint-face-colors (cons "#1B2229" "#98be65"))
- '(jdee-db-spec-breakpoint-face-colors (cons "#1B2229" "#3f444a"))
+ '(jdee-db-active-breakpoint-face-colors (cons "#10151C" "#5EC4FF"))
+ '(jdee-db-requested-breakpoint-face-colors (cons "#10151C" "#8BD49C"))
+ '(jdee-db-spec-breakpoint-face-colors (cons "#10151C" "#41505E"))
  '(menu-bar-mode nil)
  '(nrepl-message-colors
    (quote
     ("#CC9393" "#DFAF8F" "#F0DFAF" "#7F9F7F" "#BFEBBF" "#93E0E3" "#94BFF3" "#DC8CC3")))
- '(objed-cursor-color "#ff6c6b")
+ '(objed-cursor-color "#D95468")
  '(package-selected-packages
    (quote
-    (smart-mode-line-atom-one-dark-theme smart-mode-line-powerline-theme smart-mode-line gratuitous-dark-theme dracula-theme alect-themes afternoon-theme abyss-theme flatui-theme hybrid-reverse-theme immaterial-theme material-theme matlab-mode twilight-bright-theme twilight-theme cyberpunk-theme doom-themes spacemacs-theme color-theme-sanityinc-tomorrow zenburn-theme browse-kill-ring auto-complete dash async with-editor hide-comnt magit-popup git-commit frame-fns yasnippet wrap-region windresize thing-cmds s nlinum multiple-cursors move-text magit linum-relative jump-char htmlize frame-cmds expand-region evil-numbers direx dired+ cursor-chg better-defaults ace-jump-mode)))
- '(pdf-view-midnight-colors (cons "#c6c6c6" "#282b33"))
+    (aggressive-indent ace-window dash async with-editor hide-comnt git-commit frame-fns zenburn-theme yasnippet wrap-region windresize twilight-theme twilight-bright-theme thing-cmds spacemacs-theme s nlinum multiple-cursors move-text matlab-mode material-theme magit-popup magit linum-relative jump-char immaterial-theme hybrid-reverse-theme htmlize gratuitous-dark-theme frame-cmds flatui-theme expand-region evil-numbers dracula-theme doom-themes direx dired+ cyberpunk-theme cursor-chg color-theme-sanityinc-tomorrow browse-kill-ring better-defaults auto-complete alect-themes afternoon-theme ace-jump-mode abyss-theme)))
+ '(pdf-view-midnight-colors (cons "#A0B3C5" "#1D252C"))
  '(rustic-ansi-faces
-   ["#282c34" "#ff6c6b" "#98be65" "#ECBE7B" "#51afef" "#c678dd" "#46D9FF" "#bbc2cf"])
+   ["#1D252C" "#D95468" "#8BD49C" "#EBBF83" "#5EC4FF" "#E27E8D" "#70E1E8" "#A0B3C5"])
  '(scroll-bar-mode nil)
  '(send-mail-function (quote sendmail-send-it))
- '(sml/active-background-color "#34495e")
- '(sml/active-foreground-color "#ecf0f1")
- '(sml/inactive-background-color "#dfe4ea")
- '(sml/inactive-foreground-color "#34495e")
- '(sml/mode-width
-   (if
-       (eq
-        (powerline-current-separator)
-        (quote arrow))
-       (quote right)
-     (quote full)))
- '(sml/pos-id-separator
-   (quote
-    (""
-     (:propertize " " face powerline-active1)
-     (:eval
-      (propertize " "
-                  (quote display)
-                  (funcall
-                   (intern
-                    (format "powerline-%s-%s"
-                            (powerline-current-separator)
-                            (car powerline-default-separator-dir)))
-                   (quote powerline-active1)
-                   (quote powerline-active2))))
-     (:propertize " " face powerline-active2))))
- '(sml/pos-minor-modes-separator
-   (quote
-    (""
-     (:propertize " " face powerline-active1)
-     (:eval
-      (propertize " "
-                  (quote display)
-                  (funcall
-                   (intern
-                    (format "powerline-%s-%s"
-                            (powerline-current-separator)
-                            (cdr powerline-default-separator-dir)))
-                   (quote powerline-active1)
-                   (quote sml/global))))
-     (:propertize " " face sml/global))))
- '(sml/pre-id-separator
-   (quote
-    (""
-     (:propertize " " face sml/global)
-     (:eval
-      (propertize " "
-                  (quote display)
-                  (funcall
-                   (intern
-                    (format "powerline-%s-%s"
-                            (powerline-current-separator)
-                            (car powerline-default-separator-dir)))
-                   (quote sml/global)
-                   (quote powerline-active1))))
-     (:propertize " " face powerline-active1))))
- '(sml/pre-minor-modes-separator
-   (quote
-    (""
-     (:propertize " " face powerline-active2)
-     (:eval
-      (propertize " "
-                  (quote display)
-                  (funcall
-                   (intern
-                    (format "powerline-%s-%s"
-                            (powerline-current-separator)
-                            (cdr powerline-default-separator-dir)))
-                   (quote powerline-active2)
-                   (quote powerline-active1))))
-     (:propertize " " face powerline-active1))))
- '(sml/pre-modes-separator (propertize " " (quote face) (quote sml/modes)))
- '(sml/theme (quote automatic))
- '(tab-width 1)
- '(tcl-continued-indent-level 1)
- '(tcl-indent-level 1)
- '(vc-annotate-background "#222222")
+ '(vc-annotate-background "#1D252C")
  '(vc-annotate-color-map
-   (quote
-    ((20 . "#fa5151")
-     (40 . "#ea3838")
-     (60 . "#f8ffa0")
-     (80 . "#e8e815")
-     (100 . "#fe8b04")
-     (120 . "#e5c900")
-     (140 . "#32cd32")
-     (160 . "#8ce096")
-     (180 . "#7fb07f")
-     (200 . "#3cb370")
-     (220 . "#099709")
-     (240 . "#2fdbde")
-     (260 . "#1fb3b3")
-     (280 . "#8cf1f1")
-     (300 . "#94bff3")
-     (320 . "#62b6ea")
-     (340 . "#30a5f5")
-     (360 . "#e353b9"))))
- '(vc-annotate-very-old-color "#e353b9")
- '(verilog-auto-lineup (quote ignore))
- '(verilog-case-indent 1)
- '(verilog-cexp-indent 1)
- '(verilog-indent-level 1)
- '(verilog-indent-level-declaration 1)
- '(verilog-indent-level-module 1)
- '(verilog-indent-lists nil)
+   (list
+    (cons 20 "#8BD49C")
+    (cons 40 "#abcd93")
+    (cons 60 "#cbc68b")
+    (cons 80 "#EBBF83")
+    (cons 100 "#e5ae6f")
+    (cons 120 "#df9e5b")
+    (cons 140 "#D98E48")
+    (cons 160 "#dc885f")
+    (cons 180 "#df8376")
+    (cons 200 "#E27E8D")
+    (cons 220 "#df7080")
+    (cons 240 "#dc6274")
+    (cons 260 "#D95468")
+    (cons 280 "#b35365")
+    (cons 300 "#8d5163")
+    (cons 320 "#675160")
+    (cons 340 "#56697A")
+    (cons 360 "#56697A")))
+ '(vc-annotate-very-old-color nil)
  '(window-divider-mode nil))
-
-(custom-set-faces
- ;; custom-set-faces was added by Custom.
- ;; If you edit it by hand, you could mess it up, so be careful.
- ;; Your init file should contain only one such instance.
- ;; If there is more than one, they won't work right.
- '(sml/folder ((t (:inherit sml/global :foreground "gainsboro" :weight normal))))
- '(tcl-escaped-newline ((t nil))))
-(put 'dired-find-alternate-file 'disabled nil)
