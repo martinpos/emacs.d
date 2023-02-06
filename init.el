@@ -1,4 +1,4 @@
-;; init.el : my personal emacs setup
+; init.el : my personal emacs setup
 ;;
 ;; Nov  8 2015  martin.pos@2lazy.nl  - .emacs -> init.el
 ;; Nov 12 2015  martin.pos@2lazy.nl  - re-grouped, less comments
@@ -76,6 +76,10 @@
 ;;                                   - mouse-autoselect-window
 ;; Dec 15 2021  martin.pos@nxp.com   - mpp-hilite, use region or thing-at-point
 ;; Jan 13 2022  martin.pos@nxp.com   - todo-jump last
+;; Mar 12 2022  martin.pos@nxp.com   - override tcl-calculate-indent
+;; Mar 22 2022  martin.pos@nxp.com   - find-file-ace-window (dired)
+;; Jun 01 2022  martin.pos@nxp.com   - filter-by-perl-command
+;; Feb 06 2023  martin.pos@nxp.com   - hungry-delete
 ;;
 
 ;;
@@ -188,6 +192,12 @@ zenburn-theme))
 (setq erc-server-connect-function 'open-http-proxy-stream)
 
 ;;
+;; server-start
+;;
+;;
+(server-start)
+
+;;
 ;; title
 ;;
 ;; NB: (substring str 0 -1)  removes trailing \n
@@ -277,9 +287,29 @@ zenburn-theme))
 
 ;; Feb 18 2021  martin.pos@nxp.com  - my-dired-mode-hook
 ;; Mar 12 2021  martin.pos@nxp.com  - details default enabled
+;; Oct 27 2022  martin.pos@nxp.com  - dired-display-file
 ;;
 (setq diredp-hide-details-initially-flag nil)
 (add-hook 'dired-mode-hook (lambda () (setq truncate-lines t)))
+
+;; Mar 12 2022  martin.pos@nxp.com  - find-file-ace-window
+;; from: https://stackoverflow.com/questions/15441961/opening-a-file-from-dired-in-particular-window
+(defun find-file-ace-window ()
+ "Use ace window to select a window for opening a file from dired."
+ (interactive)
+ (let ((file (dired-get-file-for-visit)))
+  (if (> (length (aw-window-list)) 1)
+   (aw-select "" (lambda (window) (aw-switch-to-window window) (find-file file)))
+   (find-file-other-window file)
+  )
+ )
+)
+(eval-after-load "dired" '(progn
+ (define-key dired-mode-map (kbd "M-RET") 'find-file-ace-window)
+ (define-key dired-mode-map (kbd "S-RET") 'dired-display-file)
+ (define-key dired-mode-map (kbd "RET") 'dired-find-alternate-file)
+ (define-key dired-mode-map (kbd "y") 'dired-display-file)
+))
 
 ;;
 ;; load themes
@@ -306,8 +336,8 @@ zenburn-theme))
 ;;
 ;; Sep 23 2020  martin.pos@nxp.com  - smart-mode-line
 ;; Apr 05 2021  martin.pos@nxp.com  - mode-line-format (experimenting still)
-(setq sml/name-width 70)
-(setq sml/mode-width 30)
+(setq sml/name-width 100)
+(setq sml/mode-width 'full)
 (setq sml/no-confirm-load-theme t)
 (setq sml/theme 'mpp)
 (sml/setup)
@@ -317,7 +347,7 @@ zenburn-theme))
   mode-line-mule-info
   mode-line-client
   mode-line-modified
-  mode-line-remote
+  mode-line-remote`
   mode-line-frame-identification
   mode-line-buffer-identification
   sml/pos-id-separator
@@ -348,6 +378,8 @@ zenburn-theme))
                             (font-lock-mode 1))
                         (setq octave-block-offset 1)
                         (setq octave-continuation-offset 1))))
+(add-to-list 'auto-mode-alist '("\\.sgdc\\'" . tcl-mode))
+(add-to-list 'auto-mode-alist '("\\.sdc\\'" . tcl-mode))
 
 (setq
  lisp-body-indent 1
@@ -373,20 +405,14 @@ zenburn-theme))
  verilog-tab-to-comment t
 )
 
-(setq octave-mode-hook
-      (lambda () (progn (setq octave-comment-char ?%)
-                        (setq comment-start "%")
-                        (setq indent-tabs-mode nil)
-                        (setq comment-add 0)
-                        (setq tab-width 1)
-                        (setq tab-stop-list (number-sequence 2 200 2))
-                        (setq octave-block-offset 2)
-                        (setq abbrev-mode 1)
-                        (setq auto-fill-mode 1)
-                        (if (eq window-system 'x)
-                            (font-lock-mode 1))
-                        (setq octave-block-offset 1)
-                        (setq octave-continuation-offset 1))))
+(add-hook 'makefile-mode-hook
+  (lambda ()
+    (setq indent-tabs-mode t)
+    (setq tab-width 2)))
+(add-hook 'makefile-gmake-mode-hook
+  (lambda ()
+    (setq indent-tabs-mode t)
+    (setq tab-width 2)))
 
 ;;
 ;; whitespace-mode
@@ -417,7 +443,7 @@ zenburn-theme))
  '(whitespace-space ((t (:background "gray20" :foreground "gray30"))))
  '(whitespace-space-after-tab ((t (:background "yellow" :foreground "red"))))
  '(whitespace-space-before-tab ((t (:background "yellow" :foreground "red"))))
- '(whitespace-tab ((t (:background "red"))))
+ '(whitespace-tab ((t (:background "orange"))))
  '(whitespace-trailing ((t (:background "gray20")))))
 
 (add-hook 'before-save-hook 'whitespace-cleanup)
@@ -433,13 +459,25 @@ zenburn-theme))
  vhdl-end-comment-column 130
 )
 
+;;
+;; hungry-delete
+;;
+(require 'hungry-delete)
+;;(global-hungry-delete-mode)
+(setq hungry-delete-join-reluctantly t)
+(global-set-key (kbd "C-c <backspace>") 'hungry-delete-backward)
+(global-set-key (kbd "C-c <deletechar>") 'hungry-delete-forward)
 
 ;;
-;;  size and position new frames
+;;  size and position
 ;;
 (when window-system
       (set-frame-position (selected-frame) 0 0)
-      (set-frame-size (selected-frame) 91 63))
+      (set-frame-size (selected-frame) 130 90))
+
+;; size and position new frames
+(add-to-list 'default-frame-alist '(height . 70))
+(add-to-list 'default-frame-alist '(width . 130))
 
 ;;
 ;; generic
@@ -491,8 +529,6 @@ zenburn-theme))
 (setq Buffer-menu-name-width 40)
 (setq-default indent-tabs-mode nil)
 (setq-default tab-width 1)
-(setq tcl-indent-level 1)
-(setq tcl-continued-indent-level 3)
 (tool-bar-mode -1)
 (diredp-toggle-find-file-reuse-dir 1)
 (setq hippie-expand-try-functions-list '(try-complete-file-name-partially
@@ -508,6 +544,116 @@ zenburn-theme))
 (setq browse-url-browser-function 'eww-browse-url)
 (setq help-window-select t)
 (setq mouse-autoselect-window 0.7)
+(setq tcl-indent-level 1
+      tcl-continued-indent-level 1)
+
+;; my-tcl-calculate-indent
+;;
+;; Mar 12 2022  martin.pos@nxp.com  - override tcl-calculate-indent
+;;
+(advice-add 'tcl-calculate-indent :override #'my-tcl-calculate-indent)
+(defun my-tcl-calculate-indent (&optional parse-start)
+  "Return appropriate indentation for current line as Tcl code.
+In usual case returns an integer: the column to indent to.
+Returns nil if line starts inside a string, t if in a comment."
+  (save-excursion
+    (beginning-of-line)
+    (let* ((indent-point (point))
+    (case-fold-search nil)
+    (continued-line
+     (save-excursion
+       (if (bobp)
+    nil
+  (backward-char)
+  (= ?\\ (preceding-char)))))
+    (continued-indent-value (if continued-line
+           tcl-continued-indent-level
+         0))
+    state
+    containing-sexp
+    found-next-line)
+      (if parse-start
+   (goto-char parse-start)
+ (beginning-of-defun))
+      (while (< (point) indent-point)
+ (setq parse-start (point))
+ (setq state (parse-partial-sexp (point) indent-point 0))
+ (setq containing-sexp (car (cdr state))))
+      (cond ((or (nth 3 state) (nth 4 state))
+      ;; Inside comment or string.  Return nil or t if should
+      ;; not change this line
+      (nth 4 state))
+     ((null containing-sexp)
+      ;; Line is at top level.
+      continued-indent-value)
+     (t
+      ;; Set expr-p if we are looking at the expression part of
+      ;; an "if", "expr", etc statement.  Set commands-p if we
+      ;; are looking at the body part of an if, while, etc
+      ;; statement.  FIXME Should check for "for" loops here.
+      (goto-char containing-sexp)
+      (let* ((sexpr-type (tcl-figure-type))
+      (expr-p (eq sexpr-type 'tcl-expr))
+      (commands-p (eq sexpr-type 'tcl-commands))
+      (expr-start (point)))
+        ;; Find the first statement in the block and indent
+        ;; like it.  The first statement in the block might be
+        ;; on the same line, so what we do is skip all
+        ;; "virtually blank" lines, looking for a non-blank
+        ;; one.  A line is virtually blank if it only contains
+        ;; a comment and whitespace.  FIXME continued comments
+        ;; aren't supported.  They are a wart on Tcl anyway.
+        ;; We do it this funky way because we want to know if
+        ;; we've found a statement on some line _after_ the
+        ;; line holding the sexp opener.
+        (goto-char containing-sexp)
+        (forward-char)
+        (if (and (< (point) indent-point)
+   (looking-at "[ \t]*\\(#.*\\)?$"))
+     (progn
+       (forward-line)
+       (while (and (< (point) indent-point)
+     (looking-at "[ \t]*\\(#.*\\)?$"))
+         (setq found-next-line t)
+         (forward-line))))
+        (if (or continued-line
+         (/= (char-after containing-sexp) ?{)
+         expr-p)
+     (progn
+       ;; Line is continuation line, or the sexp opener
+       ;; is not a curly brace, or we are looking at
+       ;; an `expr' expression (which must be split
+       ;; specially).  So indentation is column of first
+       ;; good spot after sexp opener (with some added
+       ;; in the continued-line case).  If there is no
+       ;; nonempty line before the indentation point, we
+       ;; use the column of the character after the sexp
+       ;; opener.
+       (if (>= (point) indent-point)
+    (progn
+      (goto-char containing-sexp)
+      (forward-char))
+         (skip-chars-forward " \t"))
+     (- (current-column) 1))
+   ;; Mar 12 2022  martin.pos@nxp.com - edit
+   ;;(+ (current-column) continued-indent-value))
+
+   ;; After a curly brace, and not a continuation line.
+   ;; So take indentation from first good line after
+   ;; start of block, unless that line is on the same
+   ;; line as the opening brace.  In this case use the
+   ;; indentation of the opening brace's line, plus
+   ;; another indent step.  If we are in the body part
+   ;; of an "if" or "while" then the indentation is
+   ;; taken from the line holding the start of the
+   ;; statement.
+   (if (and (< (point) indent-point)
+     found-next-line)
+       (current-indentation)
+     (if commands-p
+         (goto-char expr-start)
+       (goto-char containing-sexp))
+     (+ (current-indentation) tcl-indent-level)))))))))
 
 ;;
 ;; spelling - May 19 2016  martin.pos@nxp.com
@@ -529,6 +675,7 @@ zenburn-theme))
 ;; key bindings
 ;;
 (global-set-key (kbd "C-x C-b") 'ibuffer)
+(global-set-key (kbd "C-x C-d") 'dired-jump)
 (global-set-key (kbd "C-x C-r") 'recentf-open-files)
 (global-set-key (kbd "C-x y") 'my-ffap)
 (global-set-key (kbd "C-=") 'er/expand-region)
@@ -536,6 +683,8 @@ zenburn-theme))
 (global-set-key [home] 'smart-beginning-of-line)
 (global-set-key (kbd "C-x M-f") 'insert-file-name)
 (global-set-key (kbd "C-x M-d") (lambda () (interactive) (insert (shell-command-to-string "me -d"))))
+;; doesn't work yet:
+;; (global-set-key (kbd "C-x M-m") (lambda (&optional arg) (interactive) (if arg (insert (shell-command-to-string "me -s")) (insert (shell-command-to-string "me"))) ))
 (global-set-key (kbd "C-x M-m") (lambda () (interactive) (insert (shell-command-to-string "me"))))
 (global-set-key (kbd "C-x M-M") (lambda () (interactive) (insert (shell-command-to-string "me -s"))))
 (global-set-key (kbd "C-x M-n") (lambda () (interactive) (insert (shell-command-to-string "me -n"))))
@@ -546,6 +695,7 @@ zenburn-theme))
 (global-set-key (kbd "<C-enter>") 'inline-shell-command)
 (global-set-key (kbd "<M-enter>") 'filter-by-shell-command)
 (global-set-key (kbd "<C-M-enter>") 'insert-shell-command)
+(global-set-key (kbd "M-p") 'filter-by-perl-command)
 (global-set-key (kbd "C-c u") 'underline-text)
 (global-set-key (kbd "M-z") 'zap-up-to-char)
 (global-set-key (kbd "C-?") 'my-expand-file-name-at-point)
@@ -652,6 +802,19 @@ zenburn-theme))
  browse-kill-ring-separator "======================================"
 )
 
+;; autoscroll to end of Messages buffer
+;;  https://stackoverflow.com/questions/4682033/in-emacs-can-i-set-up-the-messages-buffer-so-that-it-tails
+;;
+;; Feb 11 2022  martin.pos@nxp.com  - creation
+(defadvice message (after message-tail activate)
+  "goto point max after a message"
+  (with-current-buffer "*Messages*"
+    (goto-char (point-max))
+    (let ((windows (get-buffer-window-list (current-buffer) nil t)))
+      (while windows
+        (set-window-point (car windows) (point-max))
+        (setq windows (cdr windows))))))
+
 ;; cru-header
 ;;
 ;; Sep 14 2021  martin.pos@nxp.com  - todo-header
@@ -697,14 +860,34 @@ zenburn-theme))
   (((background light)) :foreground "#00FF00" :weight bold))
   "my highlighting face 1"
   :group 'mpp)
- (defface mpp-hilite-blue '(
-  (((background  dark)) :foreground "#0000FF" :weight bold)
-  (((background light)) :foreground "#0000FF" :weight bold))
+ (defface mpp-hilite-light-blue '(
+  (((background  dark)) :foreground "#8ADEFF" :weight bold)
+  (((background light)) :foreground "#8ADEFF" :weight bold))
   "my highlighting face 1"
   :group 'mpp)
  (defface mpp-hilite-yellow '(
   (((background  dark)) :foreground "#FFFF00" :weight bold)
   (((background light)) :foreground "#FFFF00" :weight bold))
+  "my highlighting face 1"
+  :group 'mpp)
+ (defface mpp-hilite-orange '(
+  (((background  dark)) :foreground "#FF8000" :weight bold)
+  (((background light)) :foreground "#FF8000" :weight bold))
+  "my highlighting face 1"
+  :group 'mpp)
+ (defface mpp-hilite-light-green '(
+  (((background  dark)) :foreground "#CCFFCC" :weight bold)
+  (((background light)) :foreground "#CCFFCC" :weight bold))
+  "my highlighting face 1"
+  :group 'mpp)
+ (defface mpp-hilite-light-blue2 '(
+  (((background  dark)) :foreground "#99FFFF" :weight bold)
+  (((background light)) :foreground "#99FFFF" :weight bold))
+  "my highlighting face 1"
+  :group 'mpp)
+ (defface mpp-hilite-light-yellow '(
+  (((background  dark)) :foreground "#FFFFCC" :weight bold)
+  (((background light)) :foreground "#FFFFCC" :weight bold))
   "my highlighting face 1"
   :group 'mpp)
  (defface mpp-hilite-magenta '(
@@ -747,8 +930,12 @@ zenburn-theme))
   hi-lock-face-defaults '(
    "mpp-hilite-red"
    "mpp-hilite-green"
-   "mpp-hilite-blue"
+   "mpp-hilite-light-blue"
    "mpp-hilite-yellow"
+   "mpp-hilite-orange"
+   "mpp-hilite-light-green"
+   "mpp-hilite-light-blue2"
+   "mpp-hilite-light-yellow"
    "mpp-hilite-magenta"
    "mpp-hilite-white"
    "mpp-hilite-1"
@@ -822,10 +1009,12 @@ zenburn-theme))
 
 ;;
 ;; Mar 10 2021  martin.pos@nxp.com  - creation
-;; Jul 22 2021  martin.pos@nxp.com  - special todo-search
+;; Jul 22 2021  martin.pos@nxp.com  - special forward search
+;; Oct 18 2022  martin.pos@nxp.com  - special backward search
+;;                                  - fix: compare last-command
 ;;
 (defun isearch-forward-region ()
- "search region-text forwards, repeat if no active region"
+ "search region-text forwards, if no active region: repeat or special search"
  (interactive)
  (let (start end line str)
   (if (use-region-p)
@@ -838,16 +1027,16 @@ zenburn-theme))
     (isearch-forward nil 1)
     (isearch-yank-string (buffer-substring start end))
    )
-   (if (string= last-command "isearch-forward-region")
+   (if (eq last-command 'isearch-forward-region)
     (isearch-repeat-forward)
-    ; special todo-search
+    ; special search
     (setq line (thing-at-point 'line t))
     (save-match-data
      (and (string-match " *\\(?:[0-9.]+  +\\)?\\(.*?\\)\\(?:  +\\| *$\\)" line)
       (setq str (match-string 1 line))
      )
     )
-    (message "special search: %s" str)
+    (message "special search forwards: %s" str)
     (forward-line)
     (deactivate-mark)
     (isearch-forward nil 1)
@@ -858,7 +1047,7 @@ zenburn-theme))
 )
 
 (defun isearch-backward-region ()
- "search region-text backwards, repeat if no active region"
+ "search region-text backwards, if no active region: repeat or special search"
  (interactive)
  (let (start end)
   (if (use-region-p)
@@ -871,7 +1060,21 @@ zenburn-theme))
     (isearch-backward nil 1)
     (isearch-yank-string (buffer-substring start end))
    )
-   (isearch-repeat-backward)
+   (if (eq last-command 'isearch-backward-region)
+    (isearch-repeat-backward)
+    ; special search
+    (setq line (thing-at-point 'line t))
+    (save-match-data
+     (and (string-match " *\\(?:[0-9.]+  +\\)?\\(.*?\\)\\(?:  +\\| *$\\)" line)
+      (setq str (match-string 1 line))
+     )
+    )
+    (message "special search backwards: %s" str)
+    (forward-line -1)
+    (deactivate-mark)
+    (isearch-backward nil 1)
+    (isearch-yank-string str)
+   )
   )
  )
 )
@@ -933,6 +1136,25 @@ zenburn-theme))
 )
 
 ;;
+;; Jun 01 2022  martin.pos@nxp.com  - creation
+;;
+(defun filter-by-perl-command ()
+ "filter the region or current line as shell command"
+ (interactive)
+ (let* (
+   (start (region-beginning))
+   (end (region-end))
+   (input (concat (buffer-substring start end) "\n"))
+   (perl-command (read-from-minibuffer "Perl command: "))
+   (command (concat "perl -pe '" perl-command "'"))
+  )
+  (goto-char end)
+  (shell-command-on-region start end command t t)
+  (exchange-point-and-mark)
+ )
+)
+
+;;
 ;; Nov 23 2015  martin.pos@nxp.com - insert-shell-command
 ;; Aug 03 2020  martin.pos@nxp.com - local variable
 ;;
@@ -960,6 +1182,7 @@ zenburn-theme))
 ;; Mar 13 2020  martin.pos@nxp.com - substitute-in-file-name, avoids prompt in case of environment variables (e.g. $HOME/.bashrc.user)
 ;; Sep 10 2020  martin.pos@nxp.com - fix opening file://<path> (addtional to file:////<path>)
 ;; May 10 2021  martin.pos@nxp.com - prefix argument to open in other window
+;; Dec 15 2022  martin.pos@nxp.com - prefix 5 open other frame
 ;;
 ;; based on: https://www.reddit.com/r/emacs/comments/676r5b/how_to_stop_findfileatprompting_when_there_is_a
 (defun my-ffap (arg)
@@ -971,13 +1194,20 @@ zenburn-theme))
    (filename (substitute-in-file-name filename))
   )
   (message "my-ffap: name=\"%s\"" name)
+  (message "arg: \"%s\"" arg)
   (if (and name filename (file-exists-p filename))
-   (if arg
-    (find-file-other-window filename)
-    (find-file filename))
-   (if arg
-    (ffap-other-window name)
-    (find-file-at-point name))
+   (cond
+    ((eq arg 5)
+     (find-file-other-frame filename))
+    (arg
+     (find-file-other-window filename))
+    (t
+     (find-file filename)))
+   (cond
+    (arg
+     (ffap-other-window name))
+    (t
+     (find-file-at-point name)))
   )
  )
 )
@@ -1214,7 +1444,7 @@ The optional argument can be generated with `make-hippie-expand-function'."
  mkdir -p $d; \
  fi=%s; \
  fo=$HOME/public_html/TODO/$p/index.html; \
- todo=$HOME/projects/BAP3_DIE2/data/aar_tdf8533_manager/aar_tdf8533_manager/bin/todo; \
+ todo=/home/audiopwr/projects/AUDIOPWR/BIN/todo; \
  msg=$((time $todo -l ~/public_html/TODO/$p -u Uncategorized $fi > $fo) 2>&1 | perl -ne 'if (s/^real\\s+/run-todo, time: /) {print}'); \
  chmod -R o+rX $d; \
  echo -n \"$msg\"
@@ -1279,12 +1509,12 @@ The optional argument can be generated with `make-hippie-expand-function'."
            (goto-char (point-max))
            (setq todo-point-todo (re-search-backward "^TODO:" nil nil)))))
      ((equal where "last")
-      (if (and (boundp 'todo-point-todo) (boundp 'todo-point-work) (eq point-cur todo-point-todo))
+      (if (and (boundp 'todo-point-last) (boundp 'todo-point-work) (eq point-cur todo-point-last))
            (goto-char todo-point-work)
          (progn
            (setq todo-point-work point-cur)
            (goto-char (point-max))
-           (setq todo-point-todo (re-search-backward "^ *\n\\(?:-\\{80,\\}\n\\)\\{5,\\}" nil nil)))))
+           (setq todo-point-last (re-search-backward "^ *\n\\(?:-\\{80,\\}\n\\)\\{5,\\}" nil nil)))))
      (t
       (if (boundp 'todo-point-work)
           (goto-char todo-point-work))))))
@@ -1443,7 +1673,7 @@ The optional argument can be generated with `make-hippie-expand-function'."
    (insert "  " (make-string 30 ?#) "\n")
   )
  )
- )
+)
 
 ;;
 ;; macros
@@ -1529,7 +1759,7 @@ static char *gnus-pointer[] = {
  '(objed-cursor-color "#D95468")
  '(package-selected-packages
    (quote
-    (aggressive-indent ace-window dash async with-editor hide-comnt git-commit frame-fns zenburn-theme yasnippet wrap-region windresize twilight-theme twilight-bright-theme thing-cmds spacemacs-theme s nlinum multiple-cursors move-text matlab-mode material-theme magit-popup magit linum-relative jump-char immaterial-theme hybrid-reverse-theme htmlize gratuitous-dark-theme frame-cmds flatui-theme expand-region evil-numbers dracula-theme doom-themes direx dired+ cyberpunk-theme cursor-chg color-theme-sanityinc-tomorrow browse-kill-ring better-defaults auto-complete alect-themes afternoon-theme ace-jump-mode abyss-theme)))
+    (hungry-delete aggressive-indent ace-window dash async with-editor hide-comnt git-commit frame-fns zenburn-theme yasnippet wrap-region windresize twilight-theme twilight-bright-theme thing-cmds spacemacs-theme s nlinum multiple-cursors move-text matlab-mode material-theme magit-popup magit linum-relative jump-char immaterial-theme hybrid-reverse-theme htmlize gratuitous-dark-theme frame-cmds flatui-theme expand-region evil-numbers dracula-theme doom-themes direx dired+ cyberpunk-theme cursor-chg color-theme-sanityinc-tomorrow browse-kill-ring better-defaults auto-complete alect-themes afternoon-theme ace-jump-mode abyss-theme)))
  '(pdf-view-midnight-colors (cons "#A0B3C5" "#1D252C"))
  '(rustic-ansi-faces
    ["#1D252C" "#D95468" "#8BD49C" "#EBBF83" "#5EC4FF" "#E27E8D" "#70E1E8" "#A0B3C5"])
